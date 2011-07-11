@@ -6,8 +6,11 @@
 
 int main ()
 {
-    int number_failed = 0;
-    SRunner * runner = srunner_create(network_manager_suite());
+    int number_failed;
+    SRunner * runner;
+   
+    runner = srunner_create(network_manager_suite());
+    number_failed = 0;
 
     srunner_run_all(runner, CK_NORMAL);
     number_failed = srunner_ntests_failed(runner);
