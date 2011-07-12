@@ -6,7 +6,7 @@ AC_INIT([Cyborg], [0.1], [jeffrey.jagoda@gmail.com])
 AC_CONFIG_SRCDIR([src/network-manager.c])
 AC_CONFIG_HEADERS([config.h])
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([-Wall -Werror])
 PKG_CHECK_MODULES([CHECK], [check >= 0.9.4])
 PKG_CHECK_MODULES([GIO], [gio-2.0 >= 2.28.6])
 

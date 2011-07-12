@@ -17,11 +17,23 @@
 #define NM_DEVICE_STATE_FAILED          9
 
 
+typedef struct {
+    guint32 address;
+    guint32 prefix;
+    guint32 gateway;
+} ip4_config;
+
+
 GDBusConnection * network_manager_init ();
 
 GPtrArray * network_manager_get_devices (GDBusConnection * connection);
 
 gint network_manager_device_state (
+        GDBusConnection * connection,
+        gchar * device
+    );
+
+GPtrArray * network_manager_device_addresses (
         GDBusConnection * connection,
         gchar * device
     );
