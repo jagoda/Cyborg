@@ -26,16 +26,20 @@ typedef struct {
 
 GDBusConnection * network_manager_init ();
 
-GPtrArray * network_manager_get_devices (GDBusConnection * connection);
+gchar ** network_manager_get_devices (GDBusConnection * connection);
+
+void network_manager_free_devices (gchar ** devices);
 
 gint network_manager_device_state (
         GDBusConnection * connection,
         gchar * device
     );
 
-GPtrArray * network_manager_device_addresses (
+ip4_config ** network_manager_device_addresses (
         GDBusConnection * connection,
         gchar * device
     );
+
+void network_manager_free_addresses (ip4_config ** addresses);
 
 #endif /* NETWORK_MANAGER_H */

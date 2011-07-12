@@ -31,60 +31,52 @@ void teardown ()
 
 START_TEST(test_get_devices)
 {
-    GPtrArray * devices;
-    gint index;
+    gchar ** devices, ** path_pointer;
     gchar * device_path;
    
     devices = network_manager_get_devices(connection);
-    fail_unless(devices->len > 0, "Really? No devices?!");
+    fail_if(devices == NULL || *devices == NULL, "Really? No devices?!");
 
     g_debug("checking device list");
-    for (index = 0; index < devices->len; index++)
+    for (path_pointer = devices; *path_pointer != NULL; path_pointer++)
     {
-        device_path = (gchar *) g_ptr_array_index(devices, index);
+        device_path = *path_pointer;
         g_debug("checking device '%s'", device_path);
         fail_unless(strlen(device_path) > 0, "Empty device path.");
         fail_unless(device_path[0] == '/', "Invalid device path.");
-        g_free(device_path);
     }
-    g_ptr_array_free(devices, TRUE);
+    network_manager_free_devices(devices);
 }
 END_TEST
 
 START_TEST(test_device_state)
 {
-    GPtrArray * devices;
-    gint index, state;
+    gchar ** devices;
+    gint state;
 
     devices = network_manager_get_devices(connection);
     state = network_manager_device_state(
             connection,
-            (gchar *) g_ptr_array_index(devices, 0)
+            *devices
         );
     fail_unless(state > NM_DEVICE_STATE_UNKNOWN, "Device state is unknown.");
     fail_unless(state <= NM_DEVICE_STATE_FAILED, "Invalid device state.");
 
-    for (index = 0; index < devices->len; index++)
-    {
-        g_free(g_ptr_array_index(devices, index));
-    }
-    g_ptr_array_free(devices, TRUE);
+    network_manager_free_devices(devices);
 }
 END_TEST
 
 START_TEST(test_device_addresses)
 {
-    GPtrArray * devices, * addresses;
-    gchar * device;
-    gint index;
+    gchar ** devices, ** device_pointer, * device;
     gboolean device_tested;
-    ip4_config * config;
+    ip4_config ** addresses, * config;
 
     device_tested = FALSE;
     devices = network_manager_get_devices(connection);
-    for (index = 0; index < devices->len; index++)
+    for (device_pointer = devices; *device_pointer != NULL; device_pointer++)
     {
-        device = (gchar *) g_ptr_array_index(devices, index);
+        device = *device_pointer;
         if (network_manager_device_state(connection, device)
                 == NM_DEVICE_STATE_ACTIVATED)
         {
@@ -95,16 +87,16 @@ START_TEST(test_device_addresses)
                 );
 
             g_debug("checking ip config for '%s'", device);
-            config = (ip4_config *) g_ptr_array_index(addresses, 0);
+            config = *addresses;
             fail_if(config->address == 0, "Invalid address.");
             fail_if(config->prefix == 0, "Invalid prefix.");
             fail_if(config->gateway == 0, "Invalid gateway.");
             device_tested = TRUE;
-        }
 
-        g_free(device);
+            network_manager_free_addresses(addresses);
+        }
     }
-    g_ptr_array_free(devices, TRUE);
+    network_manager_free_devices(devices);
 
     fail_unless(device_tested, "No devices available for address test.");
 }

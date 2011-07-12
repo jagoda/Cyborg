@@ -9,6 +9,7 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 PKG_CHECK_MODULES([CHECK], [check >= 0.9.4])
 PKG_CHECK_MODULES([GIO], [gio-2.0 >= 2.28.6])
+PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.28.6])
 
 # Checks for programs.
 AC_PROG_CC

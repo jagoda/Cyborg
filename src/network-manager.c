@@ -36,12 +36,11 @@ GDBusConnection * network_manager_init ()
     return connection;
 }
 
-GPtrArray * network_manager_get_devices (GDBusConnection * connection)
+gchar ** network_manager_get_devices (GDBusConnection * connection)
 {
     GVariant * dbus_response;
-    GPtrArray * devices;
     GVariantIter * object_paths;
-    gchar * path;
+    gchar ** devices, ** path_pointer;
 
     g_debug("asking network manager for devices");
     dbus_response = g_dbus_connection_call_sync(
@@ -59,16 +58,31 @@ GPtrArray * network_manager_get_devices (GDBusConnection * connection)
         );
 
     g_debug("extracting device list from response");
-    devices = g_ptr_array_new();
     g_variant_get(dbus_response, "(ao)", &object_paths);
-    while (g_variant_iter_loop(object_paths, "o", &path))
-    {
-        g_ptr_array_add(devices, g_strdup(path));
-    }
-    g_variant_iter_free(object_paths);
     g_variant_unref(dbus_response);
+    devices = (gchar **) g_malloc(
+            (g_variant_iter_n_children(object_paths) + 1) * sizeof(gchar *)
+        );
+    for (
+            path_pointer = devices;
+            g_variant_iter_next(object_paths, "o", path_pointer);
+            path_pointer++
+        );
+    *path_pointer = NULL;
+    g_variant_iter_free(object_paths);
 
     return devices;
+}
+
+void network_manager_free_devices (gchar ** devices)
+{
+    gchar ** device_pointer;
+
+    for (device_pointer = devices; *device_pointer != NULL; device_pointer++)
+    {
+        g_free(*device_pointer);
+    }
+    g_free(devices);
 }
 
 gint network_manager_device_state (
@@ -105,16 +119,15 @@ gint network_manager_device_state (
     return device_state;
 }
 
-GPtrArray * network_manager_device_addresses (
+ip4_config ** network_manager_device_addresses (
         GDBusConnection * connection,
         gchar * device
     )
 {
     GVariant * dbus_parameters, * dbus_response, * response_payload;
-    GPtrArray * addresses;
-    const gchar * config_path;
     GVariantIter * address_tuples, * address_parts;
-    ip4_config * ip_config;
+    ip4_config ** addresses, ** address_pointer, * ip_config;
+    const gchar * config_path;
 
     g_debug("asking DBus for Ip4Config for '%s'", device);
     dbus_parameters = g_variant_new("(ss)", DEVICE_INTERFACE, "Ip4Config");
@@ -164,16 +177,34 @@ GPtrArray * network_manager_device_addresses (
     g_variant_unref(response_payload);
 
     g_debug("parsing address tuple");
-    addresses = g_ptr_array_new();
-    while (g_variant_iter_loop(address_tuples, "au", &address_parts))
+    addresses = (ip4_config **) g_malloc(
+            (g_variant_iter_n_children(address_tuples) + 1) *
+                sizeof(ip4_config *)
+        );
+    for (
+            address_pointer = addresses;
+            g_variant_iter_next(address_tuples, "au", &address_parts);
+            address_pointer++
+        )
     {
-        ip_config = (ip4_config *) malloc(sizeof(ip4_config));
+        *address_pointer = ip_config = (ip4_config *) g_malloc(sizeof(ip4_config));
         g_variant_iter_next(address_parts, "u", &ip_config->address);
         g_variant_iter_next(address_parts, "u", &ip_config->prefix);
         g_variant_iter_next(address_parts, "u", &ip_config->gateway);
-        g_ptr_array_add(addresses, ip_config);
     }
+    *address_pointer = NULL;
     g_variant_iter_free(address_tuples);
     
     return addresses;
+}
+
+void network_manager_free_addresses (ip4_config ** addresses)
+{
+    ip4_config ** address_pointer;
+
+    for (address_pointer = addresses; *address_pointer != NULL; address_pointer++)
+    {
+        g_free(*address_pointer);
+    }
+    g_free(addresses);
 }
