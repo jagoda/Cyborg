@@ -1,12 +1,26 @@
 #include <check.h>
 #include <string.h>
 
+#include "../src/network.h"
 #include "network_configuration.h"
-#include "../src/network_configuration.h"
 
 
-static const gchar * configuration_file = "test_config.conf";
+static const gchar * configuration_file = "test_config.json";
 
+
+static void setup ();
+static void teardown ();
+
+
+void setup ()
+{
+    network_init();
+}
+
+void teardown ()
+{
+    /* TODO: implement */
+}
 
 START_TEST(test_parse)
 {
@@ -27,6 +41,7 @@ START_TEST(test_parse)
                 strlen(configuration->server) > 0,
                 "Invalid server name."
             );
+        /* FIXME: doesn't catch uninitialized values */
         fail_unless(configuration->address > 0, "Invalid address.");
         fail_unless(configuration->prefix > 0, "Invalid prefix.");
         fail_unless(configuration->gateway > 0, "Invalid gateway.");
@@ -44,6 +59,7 @@ TCase * network_configuration_core_testcase ()
     TCase * testcase;
 
     testcase = tcase_create("Core");
+    tcase_add_checked_fixture(testcase, setup, teardown);
     tcase_add_test(testcase, test_parse);
     
     return testcase;

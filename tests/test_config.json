@@ -1,0 +1,14 @@
+[
+    {
+        "server": "bump.dyn.webahead.ibm.com",
+        "address": "9.37.31.248",
+        "prefix": 25,
+        "gateway": "9.37.31.129"
+    },
+    {
+        "server": "192.168.2.1",
+        "address": "192.168.2.21",
+        "prefix": 24,
+        "gateway": "192.168.2.254"
+    }
+]

@@ -3,7 +3,7 @@
 #include <glib-object.h>
 #include <stdlib.h>
 
-#include "network-manager.h"
+#include "network.h"
 
 
 /* DBus constants */
@@ -24,8 +24,7 @@ GDBusConnection * network_manager_init ()
 {
     GDBusConnection * connection;
 
-    g_debug("initializing network manager module");
-    g_type_init();
+    network_init();
     g_debug("connecting to the system bus");
     connection = g_bus_get_sync(
             G_BUS_TYPE_SYSTEM,

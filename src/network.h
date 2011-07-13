@@ -1,8 +1,11 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#include "network_configuration.h"
 #include "network-manager.h"
 
+
+void network_init ();
 
 ip4_config ** network_my_addresses ();
 

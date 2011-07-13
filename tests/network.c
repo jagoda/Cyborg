@@ -1,7 +1,7 @@
 #include <check.h>
 
 #include "../src/network.h"
-#include "../src/network-manager.h"
+#include "network.h"
 
 
 static GDBusConnection * connection;

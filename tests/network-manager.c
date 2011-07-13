@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../src/network-manager.h"
+#include "../src/network.h"
+#include "network-manager.h"
 
 
 static GDBusConnection * connection;

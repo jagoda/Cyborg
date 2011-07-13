@@ -1,8 +1,22 @@
 #include <glib.h>
 
 #include "network.h"
-#include "network-manager.h"
 
+
+static gboolean initialized = FALSE;
+
+
+void network_init ()
+{
+    if (! initialized) {
+        g_debug("initializing glib");
+        g_type_init();
+        initialized = TRUE;
+    }
+    else {
+        g_warning("network library already initialized");
+    }
+}
 
 ip4_config ** network_my_addresses (GDBusConnection * connection)
 {
