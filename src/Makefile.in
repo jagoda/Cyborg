@@ -47,13 +47,9 @@ AR = ar
 ARFLAGS = cru
 libnetwork_a_AR = $(AR) $(ARFLAGS)
 libnetwork_a_LIBADD =
-am_libnetwork_a_OBJECTS = libnetwork_a-network.$(OBJEXT)
+am_libnetwork_a_OBJECTS = libnetwork_a-network.$(OBJEXT) \
+	libnetwork_a-network-manager.$(OBJEXT)
 libnetwork_a_OBJECTS = $(am_libnetwork_a_OBJECTS)
-libnetworkmanager_a_AR = $(AR) $(ARFLAGS)
-libnetworkmanager_a_LIBADD =
-am_libnetworkmanager_a_OBJECTS =  \
-	libnetworkmanager_a-network-manager.$(OBJEXT)
-libnetworkmanager_a_OBJECTS = $(am_libnetworkmanager_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -62,8 +58,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libnetwork_a_SOURCES) $(libnetworkmanager_a_SOURCES)
-DIST_SOURCES = $(libnetwork_a_SOURCES) $(libnetworkmanager_a_SOURCES)
+SOURCES = $(libnetwork_a_SOURCES)
+DIST_SOURCES = $(libnetwork_a_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -162,10 +158,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror -ansi -pedantic
-noinst_LIBRARIES = libnetworkmanager.a libnetwork.a
-libnetworkmanager_a_SOURCES = network-manager.c network-manager.h
-libnetworkmanager_a_CFLAGS = $(AM_CFLAGS) @GIO_CFLAGS@
-libnetwork_a_SOURCES = network.c network.h network-manager.h
+noinst_LIBRARIES = libnetwork.a
+libnetwork_a_SOURCES = network.c network.h \
+                       network-manager.c network-manager.h
+
 libnetwork_a_CFLAGS = $(AM_CFLAGS) @GIO_CFLAGS@
 all: all-am
 
@@ -208,10 +204,6 @@ libnetwork.a: $(libnetwork_a_OBJECTS) $(libnetwork_a_DEPENDENCIES)
 	-rm -f libnetwork.a
 	$(libnetwork_a_AR) libnetwork.a $(libnetwork_a_OBJECTS) $(libnetwork_a_LIBADD)
 	$(RANLIB) libnetwork.a
-libnetworkmanager.a: $(libnetworkmanager_a_OBJECTS) $(libnetworkmanager_a_DEPENDENCIES) 
-	-rm -f libnetworkmanager.a
-	$(libnetworkmanager_a_AR) libnetworkmanager.a $(libnetworkmanager_a_OBJECTS) $(libnetworkmanager_a_LIBADD)
-	$(RANLIB) libnetworkmanager.a
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -219,8 +211,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_a-network-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_a-network.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetworkmanager_a-network-manager.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -250,19 +242,19 @@ libnetwork_a-network.obj: network.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_a_CFLAGS) $(CFLAGS) -c -o libnetwork_a-network.obj `if test -f 'network.c'; then $(CYGPATH_W) 'network.c'; else $(CYGPATH_W) '$(srcdir)/network.c'; fi`
 
-libnetworkmanager_a-network-manager.o: network-manager.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetworkmanager_a_CFLAGS) $(CFLAGS) -MT libnetworkmanager_a-network-manager.o -MD -MP -MF $(DEPDIR)/libnetworkmanager_a-network-manager.Tpo -c -o libnetworkmanager_a-network-manager.o `test -f 'network-manager.c' || echo '$(srcdir)/'`network-manager.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libnetworkmanager_a-network-manager.Tpo $(DEPDIR)/libnetworkmanager_a-network-manager.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='network-manager.c' object='libnetworkmanager_a-network-manager.o' libtool=no @AMDEPBACKSLASH@
+libnetwork_a-network-manager.o: network-manager.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_a_CFLAGS) $(CFLAGS) -MT libnetwork_a-network-manager.o -MD -MP -MF $(DEPDIR)/libnetwork_a-network-manager.Tpo -c -o libnetwork_a-network-manager.o `test -f 'network-manager.c' || echo '$(srcdir)/'`network-manager.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libnetwork_a-network-manager.Tpo $(DEPDIR)/libnetwork_a-network-manager.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='network-manager.c' object='libnetwork_a-network-manager.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetworkmanager_a_CFLAGS) $(CFLAGS) -c -o libnetworkmanager_a-network-manager.o `test -f 'network-manager.c' || echo '$(srcdir)/'`network-manager.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_a_CFLAGS) $(CFLAGS) -c -o libnetwork_a-network-manager.o `test -f 'network-manager.c' || echo '$(srcdir)/'`network-manager.c
 
-libnetworkmanager_a-network-manager.obj: network-manager.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetworkmanager_a_CFLAGS) $(CFLAGS) -MT libnetworkmanager_a-network-manager.obj -MD -MP -MF $(DEPDIR)/libnetworkmanager_a-network-manager.Tpo -c -o libnetworkmanager_a-network-manager.obj `if test -f 'network-manager.c'; then $(CYGPATH_W) 'network-manager.c'; else $(CYGPATH_W) '$(srcdir)/network-manager.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libnetworkmanager_a-network-manager.Tpo $(DEPDIR)/libnetworkmanager_a-network-manager.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='network-manager.c' object='libnetworkmanager_a-network-manager.obj' libtool=no @AMDEPBACKSLASH@
+libnetwork_a-network-manager.obj: network-manager.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_a_CFLAGS) $(CFLAGS) -MT libnetwork_a-network-manager.obj -MD -MP -MF $(DEPDIR)/libnetwork_a-network-manager.Tpo -c -o libnetwork_a-network-manager.obj `if test -f 'network-manager.c'; then $(CYGPATH_W) 'network-manager.c'; else $(CYGPATH_W) '$(srcdir)/network-manager.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libnetwork_a-network-manager.Tpo $(DEPDIR)/libnetwork_a-network-manager.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='network-manager.c' object='libnetwork_a-network-manager.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetworkmanager_a_CFLAGS) $(CFLAGS) -c -o libnetworkmanager_a-network-manager.obj `if test -f 'network-manager.c'; then $(CYGPATH_W) 'network-manager.c'; else $(CYGPATH_W) '$(srcdir)/network-manager.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_a_CFLAGS) $(CFLAGS) -c -o libnetwork_a-network-manager.obj `if test -f 'network-manager.c'; then $(CYGPATH_W) 'network-manager.c'; else $(CYGPATH_W) '$(srcdir)/network-manager.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

@@ -2,20 +2,18 @@ AM_CFLAGS = -Wall -Werror -ansi -pedantic
 TESTS = checker
 
 check_PROGRAMS = checker
-noinst_LIBRARIES = libnetworkmanager.a libnetwork.a
+noinst_LIBRARIES = libnetwork.a
 
 checker_SOURCES = checker.c network-manager.h \
                   $(top_builddir)/src/network-manager.h
 checker_CFLAGS = $(AM_CFLAGS) @CHECK_CFLAGS@
-checker_LDADD = libnetworkmanager.a libnetwork.a \
-                @CHECK_LIBS@ \
-                $(top_builddir)/src/libnetworkmanager.a \
+checker_LDADD = libnetwork.a \
                 $(top_builddir)/src/libnetwork.a \
+                @CHECK_LIBS@ \
                 @GIO_LIBS@
 
-libnetworkmanager_a_SOURCES = network-manager.c network-manager.h \
-                              $(top_builddir)/src/network-manager.h
-libnetworkmanager_a_CFLAGS = $(AM_CFLAGS) @CHECK_CFLAGS@ @GIO_CFLAGS@
-libnetwork_a_SOURCES = network.c network.h \
+libnetwork_a_SOURCES = network-manager.c network-manager.h \
+                       network.c network.h \
+                       $(top_builddir)/src/network-manager.h \
                        $(top_builddir)/src/network.h
 libnetwork_a_CFLAGS = $(AM_CFLAGS) @CHECK_CFLAGS@ @GIO_CFLAGS@
