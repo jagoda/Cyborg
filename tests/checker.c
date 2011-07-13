@@ -3,6 +3,7 @@
 
 #include "network.h"
 #include "network-manager.h"
+#include "network_configuration.h"
 
 
 int main ()
@@ -12,6 +13,7 @@ int main ()
    
     runner = srunner_create(network_manager_suite());
     srunner_add_suite(runner, network_suite());
+    srunner_add_suite(runner, network_configuration_suite());
     number_failed = 0;
 
     srunner_run_all(runner, CK_NORMAL);
