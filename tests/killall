@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+echo "PING from simulated killall command"
+exit 0

@@ -25,7 +25,6 @@ GDBusConnection * network_manager_init ()
 {
     GDBusConnection * connection;
 
-    network_init();
     g_debug("connecting to the system bus");
     connection = g_bus_get_sync(
             G_BUS_TYPE_SYSTEM,
@@ -192,12 +191,22 @@ ip4_config ** network_manager_device_addresses (
         g_variant_iter_next(address_parts, "u", &ip_config->prefix);
         g_variant_iter_next(address_parts, "u", &ip_config->gateway);
 
-        /*
-        ip_config->address = ntohl(ip_config->address);
-        ip_config->prefix = ntohl(ip_config->prefix);
-        ip_config->gateway = ntohl(ip_config->gateway);
-        */
+        g_debug(
+                "Network address: %s",
+                inet_ntoa(*((struct in_addr *) &ip_config->address))
+            );
         g_debug("Network prefix: %d", ip_config->prefix);
+        g_debug(
+                "Gateway address: %s",
+                inet_ntoa(*((struct in_addr *) &ip_config->gateway))
+            );
+
+        /*
+           NOTE: only adddresses in network order (despite what the Network
+           Manager documentation says.
+        */
+        ip_config->address = ntohl(ip_config->address);
+        ip_config->gateway = ntohl(ip_config->gateway);
     }
     *address_pointer = NULL;
     g_variant_iter_free(address_tuples);

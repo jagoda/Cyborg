@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+echo "PING from simulated synergyc"
+
+RETURN_VALUE=1
+
+if [ ${1} == "bump.dyn.webahead.ibm.com" ]; then
+    RETURN_VALUE=0
+fi
+
+exit ${RETURN_VALUE}

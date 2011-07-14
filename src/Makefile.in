@@ -15,6 +15,7 @@
 
 @SET_MAKE@
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -32,6 +33,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+bin_PROGRAMS = cyborg$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -51,6 +53,17 @@ am_libnetwork_a_OBJECTS = libnetwork_a-network.$(OBJEXT) \
 	libnetwork_a-network-manager.$(OBJEXT) \
 	libnetwork_a-network_configuration.$(OBJEXT)
 libnetwork_a_OBJECTS = $(am_libnetwork_a_OBJECTS)
+libsynergy_a_AR = $(AR) $(ARFLAGS)
+libsynergy_a_LIBADD =
+am_libsynergy_a_OBJECTS = libsynergy_a-synergy.$(OBJEXT)
+libsynergy_a_OBJECTS = $(am_libsynergy_a_OBJECTS)
+am__installdirs = "$(DESTDIR)$(bindir)"
+PROGRAMS = $(bin_PROGRAMS)
+am_cyborg_OBJECTS = cyborg-cyborg.$(OBJEXT)
+cyborg_OBJECTS = $(am_cyborg_OBJECTS)
+cyborg_DEPENDENCIES = libnetwork.a libsynergy.a
+cyborg_LINK = $(CCLD) $(cyborg_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -59,8 +72,10 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libnetwork_a_SOURCES)
-DIST_SOURCES = $(libnetwork_a_SOURCES)
+SOURCES = $(libnetwork_a_SOURCES) $(libsynergy_a_SOURCES) \
+	$(cyborg_SOURCES)
+DIST_SOURCES = $(libnetwork_a_SOURCES) $(libsynergy_a_SOURCES) \
+	$(cyborg_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -161,12 +176,19 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror
-noinst_LIBRARIES = libnetwork.a
+noinst_LIBRARIES = libnetwork.a libsynergy.a
+cyborg_SOURCES = cyborg.c \
+                 network.h synergy.h
+
+cyborg_CFLAGS = $(AM_CFLAGS) @GIO_CFLAGS@
+cyborg_LDADD = libnetwork.a libsynergy.a @GIO_LIBS@ @JSON_LIBS@
 libnetwork_a_SOURCES = network.c network.h \
                        network-manager.c network-manager.h \
                        network_configuration.c network_configuration.h
 
 libnetwork_a_CFLAGS = $(AM_CFLAGS) @GIO_CFLAGS@ @JSON_CFLAGS@
+libsynergy_a_SOURCES = synergy.c synergy.h
+libsynergy_a_CFLAGS = $(AM_CFLAGS) @GIO_CFLAGS@
 all: all-am
 
 .SUFFIXES:
@@ -208,6 +230,50 @@ libnetwork.a: $(libnetwork_a_OBJECTS) $(libnetwork_a_DEPENDENCIES)
 	-rm -f libnetwork.a
 	$(libnetwork_a_AR) libnetwork.a $(libnetwork_a_OBJECTS) $(libnetwork_a_LIBADD)
 	$(RANLIB) libnetwork.a
+libsynergy.a: $(libsynergy_a_OBJECTS) $(libsynergy_a_DEPENDENCIES) 
+	-rm -f libsynergy.a
+	$(libsynergy_a_AR) libsynergy.a $(libsynergy_a_OBJECTS) $(libsynergy_a_LIBADD)
+	$(RANLIB) libsynergy.a
+install-binPROGRAMS: $(bin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
+	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+	for p in $$list; do echo "$$p $$p"; done | \
+	sed 's/$(EXEEXT)$$//' | \
+	while read p p1; do if test -f $$p; \
+	  then echo "$$p"; echo "$$p"; else :; fi; \
+	done | \
+	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
+	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
+	sed 'N;N;N;s,\n, ,g' | \
+	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
+	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
+	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
+	    else { print "f", $$3 "/" $$4, $$1; } } \
+	  END { for (d in files) print "f", d, files[d] }' | \
+	while read type dir files; do \
+	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
+	    test -z "$$files" || { \
+	      echo " $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
+	      $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	    } \
+	; done
+
+uninstall-binPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+	files=`for p in $$list; do echo "$$p"; done | \
+	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
+	      -e 's/$$/$(EXEEXT)/' `; \
+	test -n "$$list" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(bindir)" && rm -f $$files
+
+clean-binPROGRAMS:
+	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+cyborg$(EXEEXT): $(cyborg_OBJECTS) $(cyborg_DEPENDENCIES) 
+	@rm -f cyborg$(EXEEXT)
+	$(cyborg_LINK) $(cyborg_OBJECTS) $(cyborg_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -215,9 +281,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cyborg-cyborg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_a-network-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_a-network.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_a-network_configuration.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsynergy_a-synergy.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -274,6 +342,34 @@ libnetwork_a-network_configuration.obj: network_configuration.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='network_configuration.c' object='libnetwork_a-network_configuration.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_a_CFLAGS) $(CFLAGS) -c -o libnetwork_a-network_configuration.obj `if test -f 'network_configuration.c'; then $(CYGPATH_W) 'network_configuration.c'; else $(CYGPATH_W) '$(srcdir)/network_configuration.c'; fi`
+
+libsynergy_a-synergy.o: synergy.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsynergy_a_CFLAGS) $(CFLAGS) -MT libsynergy_a-synergy.o -MD -MP -MF $(DEPDIR)/libsynergy_a-synergy.Tpo -c -o libsynergy_a-synergy.o `test -f 'synergy.c' || echo '$(srcdir)/'`synergy.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libsynergy_a-synergy.Tpo $(DEPDIR)/libsynergy_a-synergy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='synergy.c' object='libsynergy_a-synergy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsynergy_a_CFLAGS) $(CFLAGS) -c -o libsynergy_a-synergy.o `test -f 'synergy.c' || echo '$(srcdir)/'`synergy.c
+
+libsynergy_a-synergy.obj: synergy.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsynergy_a_CFLAGS) $(CFLAGS) -MT libsynergy_a-synergy.obj -MD -MP -MF $(DEPDIR)/libsynergy_a-synergy.Tpo -c -o libsynergy_a-synergy.obj `if test -f 'synergy.c'; then $(CYGPATH_W) 'synergy.c'; else $(CYGPATH_W) '$(srcdir)/synergy.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libsynergy_a-synergy.Tpo $(DEPDIR)/libsynergy_a-synergy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='synergy.c' object='libsynergy_a-synergy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsynergy_a_CFLAGS) $(CFLAGS) -c -o libsynergy_a-synergy.obj `if test -f 'synergy.c'; then $(CYGPATH_W) 'synergy.c'; else $(CYGPATH_W) '$(srcdir)/synergy.c'; fi`
+
+cyborg-cyborg.o: cyborg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cyborg_CFLAGS) $(CFLAGS) -MT cyborg-cyborg.o -MD -MP -MF $(DEPDIR)/cyborg-cyborg.Tpo -c -o cyborg-cyborg.o `test -f 'cyborg.c' || echo '$(srcdir)/'`cyborg.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/cyborg-cyborg.Tpo $(DEPDIR)/cyborg-cyborg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cyborg.c' object='cyborg-cyborg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cyborg_CFLAGS) $(CFLAGS) -c -o cyborg-cyborg.o `test -f 'cyborg.c' || echo '$(srcdir)/'`cyborg.c
+
+cyborg-cyborg.obj: cyborg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cyborg_CFLAGS) $(CFLAGS) -MT cyborg-cyborg.obj -MD -MP -MF $(DEPDIR)/cyborg-cyborg.Tpo -c -o cyborg-cyborg.obj `if test -f 'cyborg.c'; then $(CYGPATH_W) 'cyborg.c'; else $(CYGPATH_W) '$(srcdir)/cyborg.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/cyborg-cyborg.Tpo $(DEPDIR)/cyborg-cyborg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cyborg.c' object='cyborg-cyborg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cyborg_CFLAGS) $(CFLAGS) -c -o cyborg-cyborg.obj `if test -f 'cyborg.c'; then $(CYGPATH_W) 'cyborg.c'; else $(CYGPATH_W) '$(srcdir)/cyborg.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -359,8 +455,11 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES)
+all-am: Makefile $(LIBRARIES) $(PROGRAMS)
 installdirs:
+	for dir in "$(DESTDIR)$(bindir)"; do \
+	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -388,7 +487,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-noinstLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -414,7 +514,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am:
+install-exec-am: install-binPROGRAMS
 
 install-html: install-html-am
 
@@ -453,22 +553,22 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am:
+uninstall-am: uninstall-binPROGRAMS
 
 .MAKE: install-am install-strip
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-noinstLIBRARIES ctags distclean distclean-compile \
-	distclean-generic distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am
+.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
+	clean-generic clean-noinstLIBRARIES ctags distclean \
+	distclean-compile distclean-generic distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

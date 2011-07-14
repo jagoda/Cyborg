@@ -1,19 +1,24 @@
 #include <check.h>
+#include <glib-object.h>
 #include <stdlib.h>
 
 #include "network.h"
 #include "network-manager.h"
 #include "network_configuration.h"
+#include "synergy.h"
 
 
 int main ()
 {
     int number_failed;
     SRunner * runner;
+
+    g_type_init();
    
     runner = srunner_create(network_manager_suite());
     srunner_add_suite(runner, network_suite());
     srunner_add_suite(runner, network_configuration_suite());
+    srunner_add_suite(runner, synergy_suite());
     number_failed = 0;
 
     srunner_run_all(runner, CK_NORMAL);

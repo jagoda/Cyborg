@@ -24,6 +24,7 @@ AC_CHECK_HEADERS([arpa/inet.h netinet/in.h stdlib.h string.h])
 # Checks for typedefs, structures, and compiler characteristics.
 
 # Checks for library functions.
+AC_CHECK_FUNCS([inet_ntoa setenv])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile

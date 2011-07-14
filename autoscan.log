@@ -1,4 +1,6 @@
-autoscan: warning: missing AC_CHECK_HEADERS([arpa/inet.h]) wanted by: 
-	src/network_configuration.c:5
-autoscan: warning: missing AC_CHECK_HEADERS([netinet/in.h]) wanted by: 
-	src/network_configuration.c:6
+autoscan: warning: missing AC_CHECK_FUNCS([inet_ntoa]) wanted by: 
+	src/network-manager.c:196
+	src/network-manager.c:201
+autoscan: warning: missing AC_CHECK_FUNCS([setenv]) wanted by: 
+	tests/synergy.c:35
+	tests/synergy.c:45

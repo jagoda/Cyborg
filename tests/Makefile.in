@@ -53,9 +53,15 @@ am_libnetwork_a_OBJECTS = libnetwork_a-network-manager.$(OBJEXT) \
 	libnetwork_a-network.$(OBJEXT) \
 	libnetwork_a-network_configuration.$(OBJEXT)
 libnetwork_a_OBJECTS = $(am_libnetwork_a_OBJECTS)
+libsynergy_a_AR = $(AR) $(ARFLAGS)
+libsynergy_a_LIBADD =
+am_libsynergy_a_OBJECTS = libsynergy_a-synergy.$(OBJEXT)
+libsynergy_a_OBJECTS = $(am_libsynergy_a_OBJECTS)
 am_checker_OBJECTS = checker-checker.$(OBJEXT)
 checker_OBJECTS = $(am_checker_OBJECTS)
-checker_DEPENDENCIES = libnetwork.a $(top_builddir)/src/libnetwork.a
+checker_DEPENDENCIES = libnetwork.a libsynergy.a \
+	$(top_builddir)/src/libnetwork.a \
+	$(top_builddir)/src/libsynergy.a
 checker_LINK = $(CCLD) $(checker_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -66,8 +72,10 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libnetwork_a_SOURCES) $(checker_SOURCES)
-DIST_SOURCES = $(libnetwork_a_SOURCES) $(checker_SOURCES)
+SOURCES = $(libnetwork_a_SOURCES) $(libsynergy_a_SOURCES) \
+	$(checker_SOURCES)
+DIST_SOURCES = $(libnetwork_a_SOURCES) $(libsynergy_a_SOURCES) \
+	$(checker_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 am__tty_colors = \
@@ -170,13 +178,16 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror
-noinst_LIBRARIES = libnetwork.a
-checker_SOURCES = checker.c network-manager.h \
-                  $(top_builddir)/src/network-manager.h
+noinst_LIBRARIES = libnetwork.a libsynergy.a
+checker_SOURCES = checker.c \
+                  network.h network-manager.h network_configuration.h \
+                  synergy.h
 
-checker_CFLAGS = $(AM_CFLAGS) @CHECK_CFLAGS@
+checker_CFLAGS = $(AM_CFLAGS) @CHECK_CFLAGS@ @GIO_CFLAGS@
 checker_LDADD = libnetwork.a \
+                libsynergy.a \
                 $(top_builddir)/src/libnetwork.a \
+                $(top_builddir)/src/libsynergy.a \
                 @CHECK_LIBS@ @GIO_LIBS@ @JSON_LIBS@
 
 libnetwork_a_SOURCES = network-manager.c network-manager.h \
@@ -187,6 +198,10 @@ libnetwork_a_SOURCES = network-manager.c network-manager.h \
                        $(top_builddir)/src/network.h
 
 libnetwork_a_CFLAGS = $(AM_CFLAGS) @CHECK_CFLAGS@ @GIO_CFLAGS@
+libsynergy_a_SOURCES = synergy.c synergy.h \
+                       $(top_builddir)/src/synergy.h
+
+libsynergy_a_CFLAGS = $(AM_CFLAGS) @CHECK_CFLAGS@ @GIO_CFLAGS@
 all: all-am
 
 .SUFFIXES:
@@ -228,6 +243,10 @@ libnetwork.a: $(libnetwork_a_OBJECTS) $(libnetwork_a_DEPENDENCIES)
 	-rm -f libnetwork.a
 	$(libnetwork_a_AR) libnetwork.a $(libnetwork_a_OBJECTS) $(libnetwork_a_LIBADD)
 	$(RANLIB) libnetwork.a
+libsynergy.a: $(libsynergy_a_OBJECTS) $(libsynergy_a_DEPENDENCIES) 
+	-rm -f libsynergy.a
+	$(libsynergy_a_AR) libsynergy.a $(libsynergy_a_OBJECTS) $(libsynergy_a_LIBADD)
+	$(RANLIB) libsynergy.a
 
 clean-checkPROGRAMS:
 	-test -z "$(check_PROGRAMS)" || rm -f $(check_PROGRAMS)
@@ -245,6 +264,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_a-network-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_a-network.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_a-network_configuration.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsynergy_a-synergy.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -301,6 +321,20 @@ libnetwork_a-network_configuration.obj: network_configuration.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='network_configuration.c' object='libnetwork_a-network_configuration.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_a_CFLAGS) $(CFLAGS) -c -o libnetwork_a-network_configuration.obj `if test -f 'network_configuration.c'; then $(CYGPATH_W) 'network_configuration.c'; else $(CYGPATH_W) '$(srcdir)/network_configuration.c'; fi`
+
+libsynergy_a-synergy.o: synergy.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsynergy_a_CFLAGS) $(CFLAGS) -MT libsynergy_a-synergy.o -MD -MP -MF $(DEPDIR)/libsynergy_a-synergy.Tpo -c -o libsynergy_a-synergy.o `test -f 'synergy.c' || echo '$(srcdir)/'`synergy.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libsynergy_a-synergy.Tpo $(DEPDIR)/libsynergy_a-synergy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='synergy.c' object='libsynergy_a-synergy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsynergy_a_CFLAGS) $(CFLAGS) -c -o libsynergy_a-synergy.o `test -f 'synergy.c' || echo '$(srcdir)/'`synergy.c
+
+libsynergy_a-synergy.obj: synergy.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsynergy_a_CFLAGS) $(CFLAGS) -MT libsynergy_a-synergy.obj -MD -MP -MF $(DEPDIR)/libsynergy_a-synergy.Tpo -c -o libsynergy_a-synergy.obj `if test -f 'synergy.c'; then $(CYGPATH_W) 'synergy.c'; else $(CYGPATH_W) '$(srcdir)/synergy.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libsynergy_a-synergy.Tpo $(DEPDIR)/libsynergy_a-synergy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='synergy.c' object='libsynergy_a-synergy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsynergy_a_CFLAGS) $(CFLAGS) -c -o libsynergy_a-synergy.obj `if test -f 'synergy.c'; then $(CYGPATH_W) 'synergy.c'; else $(CYGPATH_W) '$(srcdir)/synergy.c'; fi`
 
 checker-checker.o: checker.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(checker_CFLAGS) $(CFLAGS) -MT checker-checker.o -MD -MP -MF $(DEPDIR)/checker-checker.Tpo -c -o checker-checker.o `test -f 'checker.c' || echo '$(srcdir)/'`checker.c

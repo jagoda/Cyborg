@@ -10,21 +10,8 @@
 static const gchar * configuration_file = "test_config.json";
 
 
-static void setup ();
-static void teardown ();
-
 static ip4_config ** synthesize_configurations ();
 
-
-void setup ()
-{
-    network_init();
-}
-
-void teardown ()
-{
-    /* TODO: implement */
-}
 
 START_TEST(test_parse)
 {
@@ -86,7 +73,6 @@ TCase * network_configuration_core_testcase ()
     TCase * testcase;
 
     testcase = tcase_create("Core");
-    tcase_add_checked_fixture(testcase, setup, teardown);
     tcase_add_test(testcase, test_parse);
     tcase_add_test(testcase, test_match);
     
