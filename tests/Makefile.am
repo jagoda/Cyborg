@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall -Werror -ansi -pedantic
+AM_CFLAGS = -Wall -Werror
 TESTS = checker
 
 check_PROGRAMS = checker

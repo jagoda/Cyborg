@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall -Werror -ansi -pedantic
+AM_CFLAGS = -Wall -Werror
 
 noinst_LIBRARIES = libnetwork.a
 

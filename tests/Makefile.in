@@ -169,7 +169,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CFLAGS = -Wall -Werror -ansi -pedantic
+AM_CFLAGS = -Wall -Werror
 noinst_LIBRARIES = libnetwork.a
 checker_SOURCES = checker.c network-manager.h \
                   $(top_builddir)/src/network-manager.h

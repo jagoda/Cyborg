@@ -1,6 +1,7 @@
 #include <gio/gio.h>
 #include <glib.h>
 #include <glib-object.h>
+#include <arpa/inet.h>
 #include <stdlib.h>
 
 #include "network.h"
@@ -190,6 +191,13 @@ ip4_config ** network_manager_device_addresses (
         g_variant_iter_next(address_parts, "u", &ip_config->address);
         g_variant_iter_next(address_parts, "u", &ip_config->prefix);
         g_variant_iter_next(address_parts, "u", &ip_config->gateway);
+
+        /*
+        ip_config->address = ntohl(ip_config->address);
+        ip_config->prefix = ntohl(ip_config->prefix);
+        ip_config->gateway = ntohl(ip_config->gateway);
+        */
+        g_debug("Network prefix: %d", ip_config->prefix);
     }
     *address_pointer = NULL;
     g_variant_iter_free(address_tuples);

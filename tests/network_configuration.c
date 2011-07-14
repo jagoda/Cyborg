@@ -1,4 +1,6 @@
+#include <arpa/inet.h>
 #include <check.h>
+#include <netinet/in.h>
 #include <string.h>
 
 #include "../src/network.h"
@@ -10,6 +12,8 @@ static const gchar * configuration_file = "test_config.json";
 
 static void setup ();
 static void teardown ();
+
+static ip4_config ** synthesize_configurations ();
 
 
 void setup ()
@@ -41,7 +45,6 @@ START_TEST(test_parse)
                 strlen(configuration->server) > 0,
                 "Invalid server name."
             );
-        /* FIXME: doesn't catch uninitialized values */
         fail_unless(configuration->address > 0, "Invalid address.");
         fail_unless(configuration->prefix > 0, "Invalid prefix.");
         fail_unless(configuration->gateway > 0, "Invalid gateway.");
@@ -53,6 +56,30 @@ START_TEST(test_parse)
 }
 END_TEST
 
+START_TEST(test_match)
+{
+    network_configuration ** network_configurations;
+    ip4_config ** ip_status;
+    gchar * server;
+
+    network_configurations = network_configuration_parse(configuration_file);
+    ip_status = synthesize_configurations();
+    server = network_configuration_match(
+            network_configurations,
+            ip_status
+        );
+    network_configuration_free(network_configurations);
+    network_manager_free_addresses(ip_status);
+
+    fail_if(server == NULL, "no network match found");
+    fail_unless(
+            strcmp("bump.dyn.webahead.ibm.com", server) == 0,
+            "network match returned incorrect server"
+        );
+    g_free(server);
+}
+END_TEST
+
 
 TCase * network_configuration_core_testcase ()
 {
@@ -61,6 +88,7 @@ TCase * network_configuration_core_testcase ()
     testcase = tcase_create("Core");
     tcase_add_checked_fixture(testcase, setup, teardown);
     tcase_add_test(testcase, test_parse);
+    tcase_add_test(testcase, test_match);
     
     return testcase;
 }
@@ -73,4 +101,26 @@ Suite * network_configuration_suite ()
     suite_add_tcase(suite, network_configuration_core_testcase());
 
     return suite;
+}
+
+
+ip4_config ** synthesize_configurations ()
+{
+    ip4_config ** configurations;
+
+    g_debug("allocating memory for synthesized configurations");
+    configurations = (ip4_config **) g_malloc(
+            2 * sizeof(ip4_config *)
+        );
+    configurations[0] = (ip4_config *) g_malloc(
+            sizeof(ip4_config)
+        );
+    configurations[1] = NULL;
+
+    g_debug("creating fake configuration entry");
+    configurations[0]->address = ntohl(inet_addr("9.37.31.154"));
+    configurations[0]->prefix = 25;
+    configurations[0]->gateway = ntohl(inet_addr("9.37.31.129"));
+
+    return configurations;
 }
