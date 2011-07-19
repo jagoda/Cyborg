@@ -2,19 +2,16 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([Cyborg], [0.2], [jeffrey.jagoda@gmail.com])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AC_INIT([FULL-PACKAGE-NAME], [VERSION], [BUG-REPORT-ADDRESS])
 AC_CONFIG_SRCDIR([tests/checker.c])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_LIBTOOL
-PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.28.6, gio-2.0 >= 2.28.6])
 
 # Checks for libraries.
-AC_CHECK_LIB([ltdl], [lt_dlinit])
+# FIXME: Replace `main' with a function in `-lltdl':
+AC_CHECK_LIB([ltdl], [main])
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h])
