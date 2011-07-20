@@ -36,6 +36,8 @@ network_manager_ip4config ** network_manager_get_addresses (
         gchar * ip4config
     );
 
+network_manager_ip4config ** network_manager_all_addresses ();
+
 void network_manager_free_addresses (network_manager_ip4config ** addresses);
 
 #endif /* NETWORK_MANAGER_H */

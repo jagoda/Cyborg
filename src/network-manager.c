@@ -284,7 +284,7 @@ network_manager_ip4config ** network_manager_get_addresses (
             {
                 ip_config = *config_pointer =
                     (network_manager_ip4config *) g_malloc(
-                            sizeof(network_manager_ip4config *)
+                            sizeof(network_manager_ip4config)
                         );
                 g_variant_iter_next(
                         address_parts,
@@ -326,6 +326,80 @@ network_manager_ip4config ** network_manager_get_addresses (
     return ip_configs;
 }
 
+network_manager_ip4config ** network_manager_all_addresses ()
+{
+    GPtrArray * buffer;
+    network_manager_ip4config ** ip_configs;
+    network_manager_ip4config ** device_configs, ** config_pointer;
+    gchar ** devices, ** device_pointer, * ip4config_path;
+    guint index;
+
+    ip_configs = NULL;
+    devices = network_manager_get_devices();
+    if (devices)
+    {
+        buffer = g_ptr_array_new();
+        for (
+                device_pointer = devices;
+                *device_pointer != NULL;
+                device_pointer++
+            )
+        {
+            if (
+                    network_manager_get_device_state(*device_pointer)
+                    ==
+                    NM_DEVICE_STATE_ACTIVATED
+                )
+            {
+                if (! (
+                        ip4config_path
+                        =
+                        network_manager_get_ip4config(*device_pointer)
+                    ))
+                {
+                    g_error("Failed to get Ip4Config path for device.");
+                }
+                device_configs =
+                    network_manager_get_addresses(ip4config_path);
+                g_free(ip4config_path);
+                if (! device_configs)
+                {
+                    g_error("No configuration returned for device.");
+                }
+                for (
+                        config_pointer = device_configs;
+                        *config_pointer != NULL;
+                        config_pointer++
+                    )
+                {
+                    g_ptr_array_add(buffer, *config_pointer);
+                }
+
+                /* No longer need array for pointers, but still need
+                   allocated data itself. */
+                g_free(device_configs);
+            }
+        }
+
+        ip_configs = (network_manager_ip4config **) g_malloc (
+                (buffer->len + 1) * sizeof(network_manager_ip4config *)
+            );
+        for (
+                index = 0, config_pointer = ip_configs;
+                index < buffer->len;
+                index++, config_pointer++
+            )
+        {
+            *config_pointer = g_ptr_array_index(buffer, index);
+        }
+        *config_pointer = NULL;
+        g_ptr_array_free(buffer, TRUE);
+        network_manager_free_devices(devices);
+    }
+
+    return ip_configs;
+}
+
 void network_manager_free_addresses (network_manager_ip4config ** addresses)
 {
     network_manager_ip4config ** address_pointer;
@@ -353,8 +427,7 @@ GDBusConnection * network_manager_connect ()
     error = NULL;
     connection = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);
     if (error)
-    {
-        g_error("Failed to connect to system bus: %s", error->message);
+    { g_error("Failed to connect to system bus: %s", error->message);
         g_error_free(error);
         error = NULL;
     }
