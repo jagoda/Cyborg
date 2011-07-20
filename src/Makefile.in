@@ -71,7 +71,8 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 libnetwork_la_LIBADD =
-am_libnetwork_la_OBJECTS = libnetwork_la-network-manager.lo
+am_libnetwork_la_OBJECTS = libnetwork_la-network-manager.lo \
+	libnetwork_la-configuration_parser.lo
 libnetwork_la_OBJECTS = $(am_libnetwork_la_OBJECTS)
 libnetwork_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libnetwork_la_CFLAGS) \
@@ -219,8 +220,10 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror
 pkglib_LTLIBRARIES = libnetwork.la
-libnetwork_la_SOURCES = network-manager.c network-manager.h
-libnetwork_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
+libnetwork_la_SOURCES = network-manager.c network-manager.h \
+                        configuration_parser.c configuration_parser.h
+
+libnetwork_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@ @JSON_CFLAGS@
 all: all-am
 
 .SUFFIXES:
@@ -295,6 +298,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_la-configuration_parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_la-network-manager.Plo@am__quote@
 
 .c.o:
@@ -324,6 +328,13 @@ libnetwork_la-network-manager.lo: network-manager.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='network-manager.c' object='libnetwork_la-network-manager.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_la_CFLAGS) $(CFLAGS) -c -o libnetwork_la-network-manager.lo `test -f 'network-manager.c' || echo '$(srcdir)/'`network-manager.c
+
+libnetwork_la-configuration_parser.lo: configuration_parser.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_la_CFLAGS) $(CFLAGS) -MT libnetwork_la-configuration_parser.lo -MD -MP -MF $(DEPDIR)/libnetwork_la-configuration_parser.Tpo -c -o libnetwork_la-configuration_parser.lo `test -f 'configuration_parser.c' || echo '$(srcdir)/'`configuration_parser.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libnetwork_la-configuration_parser.Tpo $(DEPDIR)/libnetwork_la-configuration_parser.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='configuration_parser.c' object='libnetwork_la-configuration_parser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_la_CFLAGS) $(CFLAGS) -c -o libnetwork_la-configuration_parser.lo `test -f 'configuration_parser.c' || echo '$(srcdir)/'`configuration_parser.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

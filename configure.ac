@@ -24,7 +24,7 @@ PKG_CHECK_MODULES([JSON], [json-glib-1.0 >= 0.12.2])
 AC_CHECK_LIB([ltdl], [lt_dlinit])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h stdlib.h string.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h stdlib.h string.h sys/socket.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 

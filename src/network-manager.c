@@ -384,15 +384,11 @@ network_manager_ip4config ** network_manager_all_addresses ()
         ip_configs = (network_manager_ip4config **) g_malloc (
                 (buffer->len + 1) * sizeof(network_manager_ip4config *)
             );
-        for (
-                index = 0, config_pointer = ip_configs;
-                index < buffer->len;
-                index++, config_pointer++
-            )
+        for (index = 0; index < buffer->len; index++)
         {
-            *config_pointer = g_ptr_array_index(buffer, index);
+            ip_configs[index] = g_ptr_array_index(buffer, index);
         }
-        *config_pointer = NULL;
+        ip_configs[index] = NULL;
         g_ptr_array_free(buffer, TRUE);
         network_manager_free_devices(devices);
     }
