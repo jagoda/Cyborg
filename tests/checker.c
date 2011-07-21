@@ -2,6 +2,7 @@
 #include <glib.h>
 #include <glib-object.h>
 #include <ltdl.h>
+#include <stdlib.h>
 
 
 #define MODULE_PATTERN      "*.la"
@@ -11,6 +12,7 @@
 int main (int argc, char ** argv)
 {
     gchar * current_directory, * module_name;
+    gchar * current_path, * new_path;
     GDir * test_directory;
     GPatternSpec * test_pattern;
     GError * error;
@@ -25,6 +27,16 @@ int main (int argc, char ** argv)
     {
         g_error("Failed to initialize LTDL: %s.", lt_dlerror());
     }
+    if (! (current_path = getenv("PATH")))
+    {
+        g_error("Failed to get PATH variable.");
+    }
+    new_path = g_strconcat("./:", current_path, NULL);
+    if (setenv("PATH", new_path, TRUE))
+    {
+        g_error("Failed to update PATH variable.");
+    }
+    g_free(new_path);
     current_directory = g_get_current_dir();
     if (lt_dlsetsearchpath(current_directory))
     {

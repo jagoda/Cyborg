@@ -1,13 +1,8 @@
 #ifndef CONFIGURATION_PARSER_H
 #define CONFIGURATION_PARSER_H
 
+#include "assimilator.h"
 #include "network-manager.h"
-
-
-typedef struct {
-    gchar * server;
-    network_manager_ip4config * network_config;
-} server_configuration;
 
 
 server_configuration ** configuration_parser_load (

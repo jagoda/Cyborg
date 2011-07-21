@@ -9,7 +9,7 @@
 
 
 /* Test cases. */
-void test_load ();
+static void test_load ();
 
 
 void register_tests ()

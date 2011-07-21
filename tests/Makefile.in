@@ -50,6 +50,12 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
+assimilator_la_DEPENDENCIES = $(top_builddir)/src/libnetwork.la
+am_assimilator_la_OBJECTS = assimilator_la-assimilator.lo
+assimilator_la_OBJECTS = $(am_assimilator_la_OBJECTS)
+assimilator_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(assimilator_la_CFLAGS) \
+	$(CFLAGS) $(assimilator_la_LDFLAGS) $(LDFLAGS) -o $@
 configuration_parser_la_DEPENDENCIES =  \
 	$(top_builddir)/src/libnetwork.la
 am_configuration_parser_la_OBJECTS =  \
@@ -67,6 +73,12 @@ network_manager_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(network_manager_la_CFLAGS) $(CFLAGS) \
 	$(network_manager_la_LDFLAGS) $(LDFLAGS) -o $@
+synergy_la_DEPENDENCIES = $(top_builddir)/src/libnetwork.la
+am_synergy_la_OBJECTS = synergy_la-synergy.lo
+synergy_la_OBJECTS = $(am_synergy_la_OBJECTS)
+synergy_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(synergy_la_CFLAGS) \
+	$(CFLAGS) $(synergy_la_LDFLAGS) $(LDFLAGS) -o $@
 am_checker_OBJECTS = checker-checker.$(OBJEXT)
 checker_OBJECTS = $(am_checker_OBJECTS)
 checker_LDADD = $(LDADD)
@@ -86,10 +98,13 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(configuration_parser_la_SOURCES) \
-	$(network_manager_la_SOURCES) $(checker_SOURCES)
-DIST_SOURCES = $(configuration_parser_la_SOURCES) \
-	$(network_manager_la_SOURCES) $(checker_SOURCES)
+SOURCES = $(assimilator_la_SOURCES) $(configuration_parser_la_SOURCES) \
+	$(network_manager_la_SOURCES) $(synergy_la_SOURCES) \
+	$(checker_SOURCES)
+DIST_SOURCES = $(assimilator_la_SOURCES) \
+	$(configuration_parser_la_SOURCES) \
+	$(network_manager_la_SOURCES) $(synergy_la_SOURCES) \
+	$(checker_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 am__tty_colors = \
@@ -219,24 +234,40 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror
-noinst_LTLIBRARIES = network-manager.la \
-                     configuration_parser.la
+noinst_LTLIBRARIES = assimilator.la \
+                     configuration_parser.la \
+                     network-manager.la \
+                     synergy.la
 
 checker_SOURCES = checker.c
 checker_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
 checker_LDFLAGS = -lltdl @GLIB_LIBS@ @JSON_LIBS@
-network_manager_la_SOURCES = network-manager.c \
-                             $(top_builddir)/src/network-manager.h
+assimilator_la_SOURCES = assimilator.c \
+                         $(top_builddir)/src/assimilator.h \
+                         $(top_builddir)/src/configuration_parser.h \
+                         $(top_builddir)/src/network-manager.h
 
-network_manager_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
-network_manager_la_LDFLAGS = -module -rpath $(libdir)
-network_manager_la_LIBADD = $(top_builddir)/src/libnetwork.la
+assimilator_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
+assimilator_la_LDFLAGS = -module -rpath $(libdir)
+assimilator_la_LIBADD = $(top_builddir)/src/libnetwork.la
 configuration_parser_la_SOURCES = configuration_parser.c \
                                   $(top_builddir)/src/configuration_parser.h
 
 configuration_parser_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
 configuration_parser_la_LDFLAGS = -module -rpath $(libdir)
 configuration_parser_la_LIBADD = $(top_builddir)/src/libnetwork.la
+network_manager_la_SOURCES = network-manager.c \
+                             $(top_builddir)/src/network-manager.h
+
+network_manager_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
+network_manager_la_LDFLAGS = -module -rpath $(libdir)
+network_manager_la_LIBADD = $(top_builddir)/src/libnetwork.la
+synergy_la_SOURCES = synergy.c \
+                     $(top_builddir)/src/synergy.h
+
+synergy_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
+synergy_la_LDFLAGS = -module -rpath $(libdir)
+synergy_la_LIBADD = $(top_builddir)/src/libnetwork.la
 all: all-am
 
 .SUFFIXES:
@@ -280,10 +311,14 @@ clean-noinstLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
+assimilator.la: $(assimilator_la_OBJECTS) $(assimilator_la_DEPENDENCIES) 
+	$(assimilator_la_LINK)  $(assimilator_la_OBJECTS) $(assimilator_la_LIBADD) $(LIBS)
 configuration_parser.la: $(configuration_parser_la_OBJECTS) $(configuration_parser_la_DEPENDENCIES) 
 	$(configuration_parser_la_LINK)  $(configuration_parser_la_OBJECTS) $(configuration_parser_la_LIBADD) $(LIBS)
 network-manager.la: $(network_manager_la_OBJECTS) $(network_manager_la_DEPENDENCIES) 
 	$(network_manager_la_LINK)  $(network_manager_la_OBJECTS) $(network_manager_la_LIBADD) $(LIBS)
+synergy.la: $(synergy_la_OBJECTS) $(synergy_la_DEPENDENCIES) 
+	$(synergy_la_LINK)  $(synergy_la_OBJECTS) $(synergy_la_LIBADD) $(LIBS)
 
 clean-checkPROGRAMS:
 	@list='$(check_PROGRAMS)'; test -n "$$list" || exit 0; \
@@ -303,9 +338,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assimilator_la-assimilator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checker-checker.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/configuration_parser_la-configuration_parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/network_manager_la-network-manager.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/synergy_la-synergy.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -328,6 +365,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
+assimilator_la-assimilator.lo: assimilator.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(assimilator_la_CFLAGS) $(CFLAGS) -MT assimilator_la-assimilator.lo -MD -MP -MF $(DEPDIR)/assimilator_la-assimilator.Tpo -c -o assimilator_la-assimilator.lo `test -f 'assimilator.c' || echo '$(srcdir)/'`assimilator.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/assimilator_la-assimilator.Tpo $(DEPDIR)/assimilator_la-assimilator.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='assimilator.c' object='assimilator_la-assimilator.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(assimilator_la_CFLAGS) $(CFLAGS) -c -o assimilator_la-assimilator.lo `test -f 'assimilator.c' || echo '$(srcdir)/'`assimilator.c
+
 configuration_parser_la-configuration_parser.lo: configuration_parser.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(configuration_parser_la_CFLAGS) $(CFLAGS) -MT configuration_parser_la-configuration_parser.lo -MD -MP -MF $(DEPDIR)/configuration_parser_la-configuration_parser.Tpo -c -o configuration_parser_la-configuration_parser.lo `test -f 'configuration_parser.c' || echo '$(srcdir)/'`configuration_parser.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/configuration_parser_la-configuration_parser.Tpo $(DEPDIR)/configuration_parser_la-configuration_parser.Plo
@@ -341,6 +385,13 @@ network_manager_la-network-manager.lo: network-manager.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='network-manager.c' object='network_manager_la-network-manager.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(network_manager_la_CFLAGS) $(CFLAGS) -c -o network_manager_la-network-manager.lo `test -f 'network-manager.c' || echo '$(srcdir)/'`network-manager.c
+
+synergy_la-synergy.lo: synergy.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(synergy_la_CFLAGS) $(CFLAGS) -MT synergy_la-synergy.lo -MD -MP -MF $(DEPDIR)/synergy_la-synergy.Tpo -c -o synergy_la-synergy.lo `test -f 'synergy.c' || echo '$(srcdir)/'`synergy.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/synergy_la-synergy.Tpo $(DEPDIR)/synergy_la-synergy.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='synergy.c' object='synergy_la-synergy.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(synergy_la_CFLAGS) $(CFLAGS) -c -o synergy_la-synergy.lo `test -f 'synergy.c' || echo '$(srcdir)/'`synergy.c
 
 checker-checker.o: checker.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(checker_CFLAGS) $(CFLAGS) -MT checker-checker.o -MD -MP -MF $(DEPDIR)/checker-checker.Tpo -c -o checker-checker.o `test -f 'checker.c' || echo '$(srcdir)/'`checker.c

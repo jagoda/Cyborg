@@ -7,11 +7,11 @@
 
 
 /* Test cases. */
-void test_get_devices ();
-void test_device_state ();
-void test_ip4config ();
-void test_device_addresses ();
-void test_all_addresses ();
+static void test_get_devices ();
+static void test_device_state ();
+static void test_ip4config ();
+static void test_device_addresses ();
+static void test_all_addresses ();
 
 
 void register_tests ()

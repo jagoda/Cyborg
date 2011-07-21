@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+EXIT_STATUS=1
+if [ "${1}" == "fake.synergy.server.com" ]; then
+    EXIT_STATUS=0
+fi
+
+exit ${EXIT_STATUS}
