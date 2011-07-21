@@ -65,9 +65,35 @@ const server_configuration * assimilator_match_network (
 
 gboolean assimilator_connect (gchar * configuration_file)
 {
-    /* TODO: implement */
-    connect_synergy(NULL, NULL);
-    return FALSE;
+    server_configuration ** stored_configurations;
+    network_manager_ip4config ** ip_configurations;
+    gboolean success;
+
+    if (! configuration_file)
+    {
+        g_error("Configuration file path must not be NULL.");
+    }
+    if (! (
+            stored_configurations = configuration_parser_load(
+                configuration_file
+            )
+        ))
+    {
+        g_error("Failed to load configuration file '%s'", configuration_file);
+    }
+    if (! (
+            ip_configurations = network_manager_all_addresses()
+        ))
+    {
+        g_error("Failed to get current network configuration.");
+    }
+
+    success = TRUE;
+    if (! connect_synergy(stored_configurations, ip_configurations)) {
+        success = FALSE;
+    }
+
+    return success;
 }
 
 
