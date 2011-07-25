@@ -60,20 +60,34 @@ void test_device_state ()
 
 void test_ip4config ()
 {
-    gchar ** devices, * ip4config_path;
+    gchar ** devices, ** device_pointer, * ip4config_path;
+    gboolean active_device_found;
     guint32 device_state;
 
     devices = network_manager_get_devices();
     g_assert(devices);
-    g_assert(*devices);
 
-    device_state = network_manager_get_device_state(*devices);
-    g_assert_cmpuint(device_state, ==, NM_DEVICE_STATE_ACTIVATED);
+    active_device_found = FALSE;
+    ip4config_path = FALSE;
+    for (
+            device_pointer = devices;
+            *device_pointer != NULL;
+            device_pointer++
+        )
+    {
+        device_state = network_manager_get_device_state(*device_pointer);
 
-    ip4config_path = network_manager_get_ip4config(*devices);
-    g_assert(ip4config_path);
-    g_assert_cmpuint(strlen(ip4config_path), >, 0);
-    g_assert(ip4config_path[0] == '/');
+        if (device_state == NM_DEVICE_STATE_ACTIVATED)
+        {
+            active_device_found = TRUE;
+            ip4config_path = network_manager_get_ip4config(*device_pointer);
+            g_assert(ip4config_path);
+            g_assert_cmpuint(strlen(ip4config_path), >, 0);
+            g_assert(ip4config_path[0] == '/');
+            break;
+        }
+    }
+    g_assert(active_device_found);
 
     network_manager_free_devices(devices);
     g_free(ip4config_path);
@@ -81,7 +95,7 @@ void test_ip4config ()
 
 void test_device_addresses ()
 {
-    gchar ** devices, * ip4config_path;
+    gchar ** devices, ** device_pointer, * ip4config_path;
     guint32 device_state;
     network_manager_ip4config ** addresses, ** address_pointer;
     network_manager_ip4config * address;
@@ -89,14 +103,25 @@ void test_device_addresses ()
 
     devices = network_manager_get_devices();
     g_assert(devices);
-    g_assert(*devices);
 
-    device_state = network_manager_get_device_state(*devices);
-    g_assert_cmpint(device_state, ==, NM_DEVICE_STATE_ACTIVATED);
+    addresses = NULL;
+    for (
+            device_pointer = devices;
+            *device_pointer != NULL;
+            device_pointer++
+        )
+    {
+        device_state = network_manager_get_device_state(*device_pointer);
 
-    ip4config_path = network_manager_get_ip4config(*devices);
-    network_manager_free_devices(devices);
-    addresses = network_manager_get_addresses(ip4config_path);
+        if (device_state == NM_DEVICE_STATE_ACTIVATED)
+        {
+            ip4config_path = network_manager_get_ip4config(*device_pointer);
+            network_manager_free_devices(devices);
+            addresses = network_manager_get_addresses(ip4config_path);
+            g_free(ip4config_path);
+            break;
+        }
+    }
     g_assert(addresses);
 
     for (

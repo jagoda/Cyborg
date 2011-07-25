@@ -16,6 +16,7 @@
 /* Test cases. */
 static void test_match_network ();
 static void test_connect ();
+static void test_disconnect ();
 
 static network_manager_ip4config ** synthesize_configuration ();
 
@@ -24,6 +25,7 @@ void register_tests ()
 {
     register_test(test_match_network);
     register_test(test_connect);
+    register_test(test_disconnect);
 }
 
 
@@ -56,6 +58,11 @@ void test_match_network ()
 void test_connect ()
 {
     g_assert(assimilator_connect(TEST_CONFIGURATION));
+}
+
+void test_disconnect ()
+{
+    g_assert(assimilator_disconnect());
 }
 
 

@@ -17,4 +17,6 @@ const server_configuration * assimilator_match_network (
 
 gboolean assimilator_connect (gchar * configuration_file);
 
+gboolean assimilator_disconnect ();
+
 #endif /* ASSIMILATOR_H */

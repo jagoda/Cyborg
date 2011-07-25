@@ -40,4 +40,8 @@ network_manager_ip4config ** network_manager_all_addresses ();
 
 void network_manager_free_addresses (network_manager_ip4config ** addresses);
 
+guint network_manager_register_connect_handler (
+        void (*handler)(guint state)
+    );
+
 #endif /* NETWORK_MANAGER_H */

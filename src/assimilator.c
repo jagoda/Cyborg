@@ -96,6 +96,11 @@ gboolean assimilator_connect (gchar * configuration_file)
     return success;
 }
 
+gboolean assimilator_disconnect ()
+{
+    return synergy_disconnect();
+}
+
 
 server_configuration * match_network(
         network_manager_ip4config * network,
@@ -138,7 +143,6 @@ gboolean network_is_match (
     if (reference->prefix != target->prefix)
     {
         is_match = FALSE;
-        g_debug("prefix match failed");
     }
     if (reference->gateway_address != target->gateway_address)
     {
@@ -151,7 +155,6 @@ gboolean network_is_match (
         )
     {
         is_match = FALSE;
-        g_debug("address match failed");
     }
 
     return is_match;

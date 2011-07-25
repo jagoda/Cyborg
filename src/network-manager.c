@@ -21,6 +21,7 @@ static const gchar * NETWORK_MANAGER_DEVICE_INTERFACE =
     "org.freedesktop.NetworkManager.Device";
 static const gchar * NETWORK_MANAGER_DEVICE_STATE = "State";
 static const gchar * NETWORK_MANAGER_DEVICE_IP4CONFIG = "Ip4Config";
+static const gchar * NETWORK_MANAGER_DEVICE_STATE_CHANGED = "StateChanged";
 
 static const gchar * NETWORK_MANAGER_IP4CONFIG_INTERFACE =
     "org.freedesktop.NetworkManager.IP4Config";
@@ -32,6 +33,21 @@ static const gchar * DBUS_PROPERTIES_GET = "Get";
 
 
 static GDBusConnection * network_manager_connect ();
+
+static guint subscribe_to_signal (
+        void (*handler)(guint state),
+        gchar * signal
+    );
+
+static void signal_callback_wrapper (
+        GDBusConnection * connection,
+        const gchar * sender_name,
+        const gchar * object_path,
+        const gchar * interface_name,
+        const gchar * signal_name,
+        GVariant * parameters,
+        gpointer user_data
+    );
 
 
 gchar ** network_manager_get_devices ()
@@ -414,6 +430,16 @@ void network_manager_free_addresses (network_manager_ip4config ** addresses)
     }
 }
 
+guint network_manager_register_connect_handler (
+        void (*handler)(guint state)
+    )
+{
+    return subscribe_to_signal(
+            handler,
+            (gchar *) NETWORK_MANAGER_DEVICE_STATE_CHANGED
+        );
+}
+
 
 GDBusConnection * network_manager_connect ()
 {
@@ -429,4 +455,50 @@ GDBusConnection * network_manager_connect ()
     }
 
     return connection;
+}
+
+guint subscribe_to_signal (
+        void (*handler)(guint state),
+        gchar * signal
+    )
+{
+    GDBusConnection * system_bus;
+    guint subscription_id;
+
+    subscription_id = 0;
+    if (( system_bus = network_manager_connect() ))
+    {
+        subscription_id = g_dbus_connection_signal_subscribe(
+                system_bus,
+                NETWORK_MANAGER_SERVICE,
+                NETWORK_MANAGER_DEVICE_INTERFACE,
+                signal,
+                NULL,
+                NULL,
+                G_DBUS_SIGNAL_FLAGS_NONE,
+                signal_callback_wrapper,
+                handler,
+                NULL
+            );
+    }
+
+    return subscription_id;
+}
+
+void signal_callback_wrapper (
+        GDBusConnection * connection,
+        const gchar * sender_name,
+        const gchar * object_path,
+        const gchar * interface_name,
+        const gchar * signal_name,
+        GVariant * parameters,
+        gpointer user_data
+    )
+{
+    guint old_state, new_state, reason;
+    void (*handler)(guint state);
+
+    handler = user_data;
+    g_variant_get(parameters, "(uuu)", &new_state, &old_state, &reason);
+    handler(new_state);
 }
