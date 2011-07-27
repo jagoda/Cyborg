@@ -75,7 +75,8 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 libnetwork_la_LIBADD =
 am_libnetwork_la_OBJECTS = libnetwork_la-assimilator.lo \
 	libnetwork_la-configuration_parser.lo \
-	libnetwork_la-network-manager.lo libnetwork_la-synergy.lo
+	libnetwork_la-network-manager.lo libnetwork_la-synergy.lo \
+	libnetwork_la-pulseaudio.lo
 libnetwork_la_OBJECTS = $(am_libnetwork_la_OBJECTS)
 libnetwork_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libnetwork_la_CFLAGS) \
@@ -169,6 +170,8 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
+PULSEAUDIO_CFLAGS = @PULSEAUDIO_CFLAGS@
+PULSEAUDIO_LIBS = @PULSEAUDIO_LIBS@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -232,13 +235,16 @@ AM_CFLAGS = -Wall -Werror
 pkglib_LTLIBRARIES = libnetwork.la
 cyborg_SOURCES = cyborg.c
 cyborg_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
-cyborg_LDADD = libnetwork.la @GLIB_LIBS@ @JSON_LIBS@
+cyborg_LDADD = libnetwork.la @GLIB_LIBS@ @JSON_LIBS@ @PULSEAUDIO_LIBS@
 libnetwork_la_SOURCES = assimilator.c assimilator.h \
                         configuration_parser.c configuration_parser.h \
                         network-manager.c network-manager.h \
-                        synergy.c synergy.h
+                        synergy.c synergy.h \
+                        pulseaudio.c pulseaudio.h
 
-libnetwork_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@ @JSON_CFLAGS@
+libnetwork_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@ @JSON_CFLAGS@ \
+                       @PULSEAUDIO_CFLAGS@
+
 all: all-am
 
 .SUFFIXES:
@@ -363,6 +369,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_la-assimilator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_la-configuration_parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_la-network-manager.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_la-pulseaudio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnetwork_la-synergy.Plo@am__quote@
 
 .c.o:
@@ -413,6 +420,13 @@ libnetwork_la-synergy.lo: synergy.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='synergy.c' object='libnetwork_la-synergy.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_la_CFLAGS) $(CFLAGS) -c -o libnetwork_la-synergy.lo `test -f 'synergy.c' || echo '$(srcdir)/'`synergy.c
+
+libnetwork_la-pulseaudio.lo: pulseaudio.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_la_CFLAGS) $(CFLAGS) -MT libnetwork_la-pulseaudio.lo -MD -MP -MF $(DEPDIR)/libnetwork_la-pulseaudio.Tpo -c -o libnetwork_la-pulseaudio.lo `test -f 'pulseaudio.c' || echo '$(srcdir)/'`pulseaudio.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libnetwork_la-pulseaudio.Tpo $(DEPDIR)/libnetwork_la-pulseaudio.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulseaudio.c' object='libnetwork_la-pulseaudio.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libnetwork_la_CFLAGS) $(CFLAGS) -c -o libnetwork_la-pulseaudio.lo `test -f 'pulseaudio.c' || echo '$(srcdir)/'`pulseaudio.c
 
 cyborg-cyborg.o: cyborg.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cyborg_CFLAGS) $(CFLAGS) -MT cyborg-cyborg.o -MD -MP -MF $(DEPDIR)/cyborg-cyborg.Tpo -c -o cyborg-cyborg.o `test -f 'cyborg.c' || echo '$(srcdir)/'`cyborg.c

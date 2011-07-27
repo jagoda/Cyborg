@@ -6,10 +6,12 @@ pkglib_LTLIBRARIES = libnetwork.la
 
 cyborg_SOURCES = cyborg.c
 cyborg_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
-cyborg_LDADD = libnetwork.la @GLIB_LIBS@ @JSON_LIBS@
+cyborg_LDADD = libnetwork.la @GLIB_LIBS@ @JSON_LIBS@ @PULSEAUDIO_LIBS@
 
 libnetwork_la_SOURCES = assimilator.c assimilator.h \
                         configuration_parser.c configuration_parser.h \
                         network-manager.c network-manager.h \
-                        synergy.c synergy.h
-libnetwork_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@ @JSON_CFLAGS@
+                        synergy.c synergy.h \
+                        pulseaudio.c pulseaudio.h
+libnetwork_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@ @JSON_CFLAGS@ \
+                       @PULSEAUDIO_CFLAGS@

@@ -5,12 +5,13 @@ check_PROGRAMS = checker
 noinst_LTLIBRARIES = assimilator.la \
                      configuration_parser.la \
                      network-manager.la \
-                     synergy.la
+                     synergy.la \
+                     pulseaudio.la
 
 
 checker_SOURCES = checker.c
 checker_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
-checker_LDFLAGS = -lltdl @GLIB_LIBS@ @JSON_LIBS@
+checker_LDFLAGS = -lltdl @GLIB_LIBS@ @JSON_LIBS@ @PULSEAUDIO_LIBS@
 
 
 assimilator_la_SOURCES = assimilator.c \
@@ -38,3 +39,9 @@ synergy_la_SOURCES = synergy.c \
 synergy_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
 synergy_la_LDFLAGS = -module -rpath $(libdir)
 synergy_la_LIBADD = $(top_builddir)/src/libnetwork.la
+
+pulseaudio_la_SOURCES = pulseaudio.c \
+                        $(top_builddir)/src/pulseaudio.h
+pulseaudio_la_CFLAGS = $(AM_CFLAGS) @GLIB_CFLAGS@
+pulseaudio_la_LDFLAGS = -module -rpath $(libdir)
+pulseaudio_la_LIBADD = $(top_builddir)/src/libnetwork.la

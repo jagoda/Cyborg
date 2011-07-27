@@ -19,16 +19,19 @@ AC_PROG_LIBTOOL
 AC_PROG_MAKE_SET
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.28.6, gio-2.0 >= 2.28.6])
 PKG_CHECK_MODULES([JSON], [json-glib-1.0 >= 0.12.2])
+PKG_CHECK_MODULES([PULSEAUDIO], [libpulse >= 0.9.22-24])
 
 # Checks for libraries.
 AC_CHECK_LIB([ltdl], [lt_dlinit])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h stdlib.h string.h sys/socket.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h stdlib.h string.h sys/socket.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
 # Checks for library functions.
+AC_FUNC_FORK
+AC_CHECK_FUNCS([setenv])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
