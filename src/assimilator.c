@@ -1,5 +1,6 @@
 #include <glib.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "assimilator.h"
 #include "configuration_parser.h"
@@ -8,8 +9,13 @@
 
 
 static server_configuration * match_network(
-        network_manager_ip4config * network,
+        network_manager_device_config * device_configuration,
         server_configuration ** configurations
+    );
+
+static gboolean device_is_match (
+        network_manager_device_config * reference,
+        network_manager_device_config * target
     );
 
 static gboolean network_is_match (
@@ -21,30 +27,30 @@ static guint32 network_address (guint32 address, guint32 prefix);
 
 static gboolean connect_synergy (
         server_configuration ** stored_configurations,
-        network_manager_ip4config ** ip_configurations
+        network_manager_device_config ** device_configurations
     );
 
 
 const server_configuration * assimilator_match_network (
         server_configuration ** stored_configurations,
-        network_manager_ip4config ** ip_configurations
+        network_manager_device_config ** device_configurations
     )
 {
-    network_manager_ip4config ** configuration_pointer;
+    network_manager_device_config ** configuration_pointer;
     server_configuration * matched_configuration;
 
     if (! stored_configurations)
     {
         g_error("Stored configuration cannot be NULL.");
     }
-    if (! ip_configurations)
+    if (! device_configurations)
     {
         g_error("Network configuration cannot be NULL.");
     }
 
     matched_configuration = NULL;
     for (
-            configuration_pointer = ip_configurations;
+            configuration_pointer = device_configurations;
             *configuration_pointer != NULL;
             configuration_pointer++
         )
@@ -66,7 +72,7 @@ const server_configuration * assimilator_match_network (
 gboolean assimilator_connect (gchar * configuration_file)
 {
     server_configuration ** stored_configurations;
-    network_manager_ip4config ** ip_configurations;
+    network_manager_device_config ** device_configurations;
     gboolean success;
 
     if (! configuration_file)
@@ -82,14 +88,14 @@ gboolean assimilator_connect (gchar * configuration_file)
         g_error("Failed to load configuration file '%s'", configuration_file);
     }
     if (! (
-            ip_configurations = network_manager_all_addresses()
+            device_configurations = network_manager_device_configurations()
         ))
     {
-        g_error("Failed to get current network configuration.");
+        g_error("Failed to get current device configurations.");
     }
 
     success = TRUE;
-    if (! connect_synergy(stored_configurations, ip_configurations)) {
+    if (! connect_synergy(stored_configurations, device_configurations)) {
         success = FALSE;
     }
 
@@ -103,7 +109,7 @@ gboolean assimilator_disconnect ()
 
 
 server_configuration * match_network(
-        network_manager_ip4config * network,
+        network_manager_device_config * device_configuration,
         server_configuration ** configurations
     )
 {
@@ -118,9 +124,9 @@ server_configuration * match_network(
         )
     {
         if (
-                network_is_match(
-                    network,
-                    (*configuration_pointer)->network_config
+                device_is_match(
+                    device_configuration,
+                    (*configuration_pointer)->device_configuration
                 )
             )
         {
@@ -130,6 +136,43 @@ server_configuration * match_network(
     }
 
     return matched_configuration;
+}
+
+gboolean device_is_match(
+        network_manager_device_config * reference,
+        network_manager_device_config * target
+    )
+{
+    network_manager_ip4config ** configuration_pointer;
+    gboolean is_match;
+
+    is_match = FALSE;
+    if (strcmp(reference->device_name, target->device_name) == 0)
+    {
+        /* NOTE: server configurations (from config file) should only
+           contain a single IP configuration whereas network manager
+           generated device configurations can technically have multiple
+           IP configurations. */
+        for (
+                configuration_pointer = target->ip_config;
+                *configuration_pointer != NULL;
+                configuration_pointer++
+            )
+        {
+            if (
+                    network_is_match(
+                        *(reference->ip_config),
+                        *configuration_pointer
+                    )
+                )
+            {
+                is_match = TRUE;
+                break;
+            }
+        }
+    }
+
+    return is_match;
 }
 
 gboolean network_is_match (
@@ -144,7 +187,9 @@ gboolean network_is_match (
     {
         is_match = FALSE;
     }
-    if (reference->gateway_address != target->gateway_address)
+    if (
+            reference->gateway_address != target->gateway_address
+        )
     {
         is_match = FALSE;
     }
@@ -168,7 +213,7 @@ guint32 network_address (guint32 address, guint32 prefix)
 
 gboolean connect_synergy (
         server_configuration ** stored_configurations,
-        network_manager_ip4config ** ip_configurations
+        network_manager_device_config ** device_configurations
     )
 {
     const server_configuration * matched_configuration;
@@ -177,7 +222,7 @@ gboolean connect_synergy (
     if ((
             matched_configuration = assimilator_match_network(
                 stored_configurations,
-                ip_configurations
+                device_configurations
             )
         ))
     {

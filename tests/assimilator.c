@@ -18,7 +18,7 @@ static void test_match_network ();
 static void test_connect ();
 static void test_disconnect ();
 
-static network_manager_ip4config ** synthesize_configuration ();
+static network_manager_device_config ** synthesize_configuration ();
 
 
 void register_tests ()
@@ -31,17 +31,17 @@ void register_tests ()
 
 void test_match_network ()
 {
-    network_manager_ip4config ** ip_configuration;
+    network_manager_device_config ** device_configuration;
     server_configuration ** stored_configuration;
     const server_configuration * matched_configuration;
 
-    ip_configuration = synthesize_configuration();
+    device_configuration = synthesize_configuration();
     stored_configuration = configuration_parser_load(TEST_CONFIGURATION);
     matched_configuration = assimilator_match_network(
             stored_configuration,
-            ip_configuration
+            device_configuration
         );
-    network_manager_free_addresses(ip_configuration);
+    network_manager_free_device_configurations(device_configuration);
 
     g_assert(matched_configuration);
     g_assert(matched_configuration->server);
@@ -66,24 +66,34 @@ void test_disconnect ()
 }
 
 
-network_manager_ip4config ** synthesize_configuration ()
+network_manager_device_config ** synthesize_configuration ()
 {
-    network_manager_ip4config ** ip_configuration;
+    network_manager_device_config ** device_config;
     struct in_addr ip_address;
 
-    ip_configuration = (network_manager_ip4config **) g_malloc(
-            2 * sizeof(network_manager_ip4config *)
+    device_config = (network_manager_device_config **) g_malloc(
+            2 * sizeof(network_manager_device_config *)
         );
-    ip_configuration[0] = (network_manager_ip4config *) g_malloc(
-            sizeof(network_manager_ip4config)
+    device_config[0] = (network_manager_device_config *) g_malloc(
+            sizeof(network_manager_device_config)
         );
-    ip_configuration[1] = NULL;
+    device_config[1] = NULL;
+    device_config[0]->ip_config =
+        (network_manager_ip4config **) g_malloc(
+                2 * sizeof(network_manager_ip4config *)
+            );
+    device_config[0]->ip_config[0] =
+        (network_manager_ip4config *) g_malloc(
+                sizeof(network_manager_ip4config)
+            );
+    device_config[0]->ip_config[1] = NULL;
 
+    device_config[0]->device_name = g_strdup("eth0");
     inet_aton("9.37.31.200", &ip_address);
-    ip_configuration[0]->ip_address = ntohl(ip_address.s_addr);
+    device_config[0]->ip_config[0]->ip_address = ntohl(ip_address.s_addr);
     inet_aton("9.37.31.129", &ip_address);
-    ip_configuration[0]->gateway_address = ntohl(ip_address.s_addr);
-    ip_configuration[0]->prefix = 25;
+    device_config[0]->ip_config[0]->gateway_address = ntohl(ip_address.s_addr);
+    device_config[0]->ip_config[0]->prefix = 25;
 
-    return ip_configuration;
+    return device_config;
 }

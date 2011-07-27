@@ -10,12 +10,13 @@
 
 
 #define SERVER_KEY      "server"
+#define INTERFACE_KEY   "interface"
 #define ADDRESS_KEY     "address"
 #define PREFIX_KEY      "prefix"
 #define GATEWAY_KEY     "gateway"
 
 
-static network_manager_ip4config * parse_network_configuration (
+static network_manager_device_config * parse_device_configuration (
         JsonObject * json_object
     );
 
@@ -77,8 +78,8 @@ server_configuration ** configuration_parser_load (
                         SERVER_KEY
                     )
                 );
-            configurations[index]->network_config =
-                parse_network_configuration(object_pointer);
+            configurations[index]->device_configuration =
+                parse_device_configuration(object_pointer);
         }
         configurations[index] = NULL;
     }
@@ -105,7 +106,9 @@ void configuration_parser_free_configuration (
     if (configuration)
     {
         g_free(configuration->server);
-        g_free(configuration->network_config);
+        network_manager_free_device_configuration(
+                configuration->device_configuration
+            );
     }
     g_free(configuration);
 }
@@ -131,11 +134,11 @@ void configuration_parser_free_configurations (
 }
 
 
-network_manager_ip4config * parse_network_configuration (
+network_manager_device_config * parse_device_configuration (
         JsonObject * json_object
     )
 {
-    network_manager_ip4config * ip_config;
+    network_manager_device_config * device_configuration;;
     gchar * server_name, * address_string;
     struct in_addr ip_address;
 
@@ -151,10 +154,26 @@ network_manager_ip4config * parse_network_configuration (
     {
         g_error("Missing server name in configuration.");
     }
-    ip_config = (network_manager_ip4config *) g_malloc(
-            sizeof(network_manager_ip4config)
+    device_configuration = (network_manager_device_config *) g_malloc(
+            sizeof(network_manager_device_config)
         );
+    device_configuration->ip_config = (network_manager_ip4config **) g_malloc(
+            2 * sizeof(network_manager_ip4config *)
+        );
+    device_configuration->ip_config[0] =
+            (network_manager_ip4config *) g_malloc(
+                sizeof(network_manager_ip4config)
+        );
+    device_configuration->ip_config[1] = NULL;
     
+    if (! (
+            device_configuration->device_name = g_strdup(
+                json_object_get_string_member(json_object, INTERFACE_KEY)
+            )
+        ))
+    {
+        g_error("Invalid interface name for server '%s'", server_name);
+    }
     if ((
             address_string
             =
@@ -163,7 +182,8 @@ network_manager_ip4config * parse_network_configuration (
     {
         if(inet_aton(address_string, &ip_address))
         {
-            ip_config->ip_address = ntohl(ip_address.s_addr);
+            device_configuration->ip_config[0]->ip_address =
+                ntohl(ip_address.s_addr);
         }
         else
         {
@@ -182,7 +202,8 @@ network_manager_ip4config * parse_network_configuration (
     {
         if(inet_aton(address_string, &ip_address))
         {
-            ip_config->gateway_address = ntohl(ip_address.s_addr);
+            device_configuration->ip_config[0]->gateway_address =
+                ntohl(ip_address.s_addr);
         }
         else
         {
@@ -193,7 +214,8 @@ network_manager_ip4config * parse_network_configuration (
     {
         g_error("Missing gateway address for server '%s'", server_name);
     }
-    ip_config->prefix = json_object_get_int_member(json_object, PREFIX_KEY);
+    device_configuration->ip_config[0]->prefix =
+        json_object_get_int_member(json_object, PREFIX_KEY);
 
-    return ip_config;
+    return device_configuration;
 }

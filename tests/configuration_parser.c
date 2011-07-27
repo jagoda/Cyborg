@@ -20,7 +20,7 @@ void register_tests ()
 
 void test_load ()
 {
-    server_configuration ** configurations, ** configuration_pointer;
+    server_configuration ** configurations;
     server_configuration * configuration;
     guint configuration_count;
 
@@ -28,16 +28,21 @@ void test_load ()
     g_assert(configurations);
 
     for (
-            configuration_pointer = configurations, configuration_count = 0;
-            *configuration_pointer != NULL;
-            configuration_pointer++, configuration_count++
+            configuration_count = 0;
+            configurations[configuration_count] != NULL;
+            configuration_count++
         )
     {
-        configuration = *configuration_pointer;
+        configuration = configurations[configuration_count];
         g_assert(configuration->server);
         g_assert_cmpuint(strlen(configuration->server), >, 0);
-        g_assert(configuration->network_config);
-        g_assert_cmpuint( configuration->network_config->ip_address, >, 0);
+        g_assert(configuration->device_configuration);
+        g_assert(configuration->device_configuration->device_name);
+        g_assert_cmpuint(
+                strlen(configuration->device_configuration->device_name),
+                >,
+                0
+            );
     }
     g_assert_cmpuint(configuration_count, >, 0);
 }

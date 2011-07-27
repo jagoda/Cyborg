@@ -23,6 +23,11 @@ typedef struct {
     guint32 gateway_address;
 } network_manager_ip4config;
 
+typedef struct {
+    gchar * device_name;
+    network_manager_ip4config ** ip_config;
+} network_manager_device_config;
+
 
 gchar ** network_manager_get_devices ();
 
@@ -30,15 +35,25 @@ void network_manager_free_devices (gchar ** devices);
 
 guint32 network_manager_get_device_state (gchar * device);
 
+gchar * network_manager_get_device_name (gchar * device);
+
 gchar * network_manager_get_ip4config (gchar * device);
 
 network_manager_ip4config ** network_manager_get_addresses (
-        gchar * ip4config
+        gchar * device
     );
 
-network_manager_ip4config ** network_manager_all_addresses ();
-
 void network_manager_free_addresses (network_manager_ip4config ** addresses);
+
+network_manager_device_config ** network_manager_device_configurations ();
+
+void network_manager_free_device_configuration (
+        network_manager_device_config * device_configuration
+    );
+
+void network_manager_free_device_configurations (
+        network_manager_device_config ** configurations
+    );
 
 guint network_manager_register_connect_handler (
         void (*handler)(guint state)

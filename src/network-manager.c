@@ -20,6 +20,7 @@ static const gchar * NETWORK_MANAGER_GET_DEVICES = "GetDevices";
 static const gchar * NETWORK_MANAGER_DEVICE_INTERFACE =
     "org.freedesktop.NetworkManager.Device";
 static const gchar * NETWORK_MANAGER_DEVICE_STATE = "State";
+static const gchar * NETWORK_MANAGER_DEVICE_NAME = "Interface";
 static const gchar * NETWORK_MANAGER_DEVICE_IP4CONFIG = "Ip4Config";
 static const gchar * NETWORK_MANAGER_DEVICE_STATE_CHANGED = "StateChanged";
 
@@ -187,10 +188,61 @@ guint32 network_manager_get_device_state (gchar * device)
     return device_state;
 }
 
+gchar * network_manager_get_device_name (gchar * device)
+{
+    GDBusConnection * system_bus;
+    GVariant * dbus_response, * dbus_parameters, * response_payload;
+    GError * error;
+    gchar * device_name;
+
+    if (! device)
+    {
+        g_error("Device path cannot be NULL.");
+    }
+
+    device_name = NULL;
+    if (( system_bus = network_manager_connect() ))
+    {
+        dbus_parameters = g_variant_new(
+                "(ss)",
+                NETWORK_MANAGER_DEVICE_INTERFACE,
+                NETWORK_MANAGER_DEVICE_NAME
+            );
+        error = NULL;
+        if ((
+                dbus_response = g_dbus_connection_call_sync(
+                    system_bus,
+                    NETWORK_MANAGER_SERVICE,
+                    device,
+                    DBUS_PROPERTIES_INTERFACE,
+                    DBUS_PROPERTIES_GET,
+                    dbus_parameters,
+                    G_VARIANT_TYPE("(v)"),
+                    G_DBUS_CALL_FLAGS_NONE,
+                    DBUS_TIMEOUT,
+                    NULL,
+                    &error)
+            ))
+        {
+            g_variant_get(dbus_response, "(v)", &response_payload);
+            device_name = g_variant_dup_string(response_payload, NULL);
+            g_variant_unref(response_payload);
+            g_variant_unref(dbus_response);
+        }
+        else
+        {
+            g_error("Failed to get device name from DBus: %s", error->message);
+        }
+        g_variant_unref(dbus_parameters);
+    }
+
+    return device_name;
+}
+
 gchar * network_manager_get_ip4config (gchar * device)
 {
     GDBusConnection * system_bus;
-    GVariant * dbus_response, *dbus_parameters, * response_payload;
+    GVariant * dbus_response, * dbus_parameters, * response_payload;
     GError * error;
     gchar * ip4config_path;
 
@@ -245,20 +297,26 @@ gchar * network_manager_get_ip4config (gchar * device)
 }
 
 network_manager_ip4config ** network_manager_get_addresses (
-        gchar * ip4config
+        gchar * device
     )
 {
     GDBusConnection * system_bus;
     GVariant * dbus_response, * dbus_parameters, * response_payload;
     GVariantIter * addresses, * address_parts;
     GError * error;
+    gchar * ip4config;
     network_manager_ip4config ** ip_configs, ** config_pointer;
     network_manager_ip4config * ip_config;
     guint address_count;
 
-    if (ip4config == NULL)
+    if (device == NULL)
     {
-        g_error("Ip4Config path cannot be NULL.");
+        g_error("Device path cannot be NULL.");
+    }
+
+    if (!(ip4config = network_manager_get_ip4config(device)))
+    {
+        g_error("Failed to get IP4Config path for device.");
     }
     ip_configs = NULL;
     if ((system_bus = network_manager_connect()))
@@ -342,76 +400,6 @@ network_manager_ip4config ** network_manager_get_addresses (
     return ip_configs;
 }
 
-network_manager_ip4config ** network_manager_all_addresses ()
-{
-    GPtrArray * buffer;
-    network_manager_ip4config ** ip_configs;
-    network_manager_ip4config ** device_configs, ** config_pointer;
-    gchar ** devices, ** device_pointer, * ip4config_path;
-    guint index;
-
-    ip_configs = NULL;
-    devices = network_manager_get_devices();
-    if (devices)
-    {
-        buffer = g_ptr_array_new();
-        for (
-                device_pointer = devices;
-                *device_pointer != NULL;
-                device_pointer++
-            )
-        {
-            if (
-                    network_manager_get_device_state(*device_pointer)
-                    ==
-                    NM_DEVICE_STATE_ACTIVATED
-                )
-            {
-                if (! (
-                        ip4config_path
-                        =
-                        network_manager_get_ip4config(*device_pointer)
-                    ))
-                {
-                    g_error("Failed to get Ip4Config path for device.");
-                }
-                device_configs =
-                    network_manager_get_addresses(ip4config_path);
-                g_free(ip4config_path);
-                if (! device_configs)
-                {
-                    g_error("No configuration returned for device.");
-                }
-                for (
-                        config_pointer = device_configs;
-                        *config_pointer != NULL;
-                        config_pointer++
-                    )
-                {
-                    g_ptr_array_add(buffer, *config_pointer);
-                }
-
-                /* No longer need array for pointers, but still need
-                   allocated data itself. */
-                g_free(device_configs);
-            }
-        }
-
-        ip_configs = (network_manager_ip4config **) g_malloc (
-                (buffer->len + 1) * sizeof(network_manager_ip4config *)
-            );
-        for (index = 0; index < buffer->len; index++)
-        {
-            ip_configs[index] = g_ptr_array_index(buffer, index);
-        }
-        ip_configs[index] = NULL;
-        g_ptr_array_free(buffer, TRUE);
-        network_manager_free_devices(devices);
-    }
-
-    return ip_configs;
-}
-
 void network_manager_free_addresses (network_manager_ip4config ** addresses)
 {
     network_manager_ip4config ** address_pointer;
@@ -427,6 +415,90 @@ void network_manager_free_addresses (network_manager_ip4config ** addresses)
             g_free(*address_pointer);
         }
         g_free(addresses);
+    }
+}
+
+network_manager_device_config ** network_manager_device_configurations ()
+{
+    network_manager_device_config ** device_configurations;
+    network_manager_device_config * configuration;
+    gchar ** device_paths, ** path_pointer;
+    GPtrArray * active_devices;
+    guint index;
+
+    device_configurations = NULL;
+    active_devices = g_ptr_array_new();
+    device_paths = network_manager_get_devices();
+
+    for (
+            path_pointer = device_paths;
+            *path_pointer != NULL;
+            path_pointer++
+        )
+    {
+        if (
+                network_manager_get_device_state(*path_pointer)
+                ==
+                NM_DEVICE_STATE_ACTIVATED
+            )
+        {
+            configuration = (network_manager_device_config *) g_malloc(
+                    sizeof(network_manager_device_config)
+                );
+            configuration->device_name =
+                network_manager_get_device_name(*path_pointer);
+            configuration->ip_config =
+                network_manager_get_addresses(*path_pointer);
+            g_ptr_array_add(active_devices, configuration);
+        }
+    }
+    network_manager_free_devices(device_paths);
+
+    device_configurations = (network_manager_device_config **) g_malloc(
+            (active_devices->len + 1) * sizeof(network_manager_device_config *)
+        );
+    for (index = 0; index < active_devices->len; index++)
+    {
+        device_configurations[index] = g_ptr_array_index(
+                active_devices,
+                index
+            );
+    }
+    device_configurations[index] = NULL;
+    g_ptr_array_unref(active_devices);
+
+    return device_configurations;
+}
+
+void network_manager_free_device_configuration (
+        network_manager_device_config * device_configuration
+    )
+{
+    if (device_configuration)
+    {
+        g_free(device_configuration->device_name);
+        network_manager_free_addresses(device_configuration->ip_config);
+        g_free(device_configuration);
+    }
+}
+
+void network_manager_free_device_configurations (
+        network_manager_device_config ** configurations
+    )
+{
+    network_manager_device_config ** configuration_pointer;
+
+    if (configurations)
+    {
+        for (
+                configuration_pointer = configurations;
+                *configuration_pointer != NULL;
+                configuration_pointer++
+            )
+        {
+            network_manager_free_device_configuration(*configuration_pointer);
+        }
+        g_free(configurations);
     }
 }
 

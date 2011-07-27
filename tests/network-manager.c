@@ -9,18 +9,20 @@
 /* Test cases. */
 static void test_get_devices ();
 static void test_device_state ();
+static void test_device_name ();
 static void test_ip4config ();
 static void test_device_addresses ();
-static void test_all_addresses ();
+static void test_device_configurations ();
 
 
 void register_tests ()
 {
     register_test(test_get_devices);
     register_test(test_device_state);
+    register_test(test_device_name);
     register_test(test_ip4config);
     register_test(test_device_addresses);
-    register_test(test_all_addresses);
+    register_test(test_device_configurations);
 }
 
 
@@ -56,6 +58,19 @@ void test_device_state ()
     device_state = network_manager_get_device_state(*devices);
     g_assert_cmpuint(device_state, >, NM_DEVICE_STATE_UNKNOWN);
     g_assert_cmpuint(device_state, <, NM_DEVICE_STATE_FAILED);
+}
+
+void test_device_name ()
+{
+    gchar ** devices, * device_name;
+
+    devices = network_manager_get_devices();
+    g_assert(devices);
+    g_assert(*devices);
+
+    device_name = network_manager_get_device_name(*devices);
+    g_assert(device_name);
+    g_assert_cmpuint(strlen(device_name), >, 0);
 }
 
 void test_ip4config ()
@@ -95,7 +110,7 @@ void test_ip4config ()
 
 void test_device_addresses ()
 {
-    gchar ** devices, ** device_pointer, * ip4config_path;
+    gchar ** devices, ** device_pointer;
     guint32 device_state;
     network_manager_ip4config ** addresses, ** address_pointer;
     network_manager_ip4config * address;
@@ -115,10 +130,8 @@ void test_device_addresses ()
 
         if (device_state == NM_DEVICE_STATE_ACTIVATED)
         {
-            ip4config_path = network_manager_get_ip4config(*device_pointer);
+            addresses = network_manager_get_addresses(*device_pointer);
             network_manager_free_devices(devices);
-            addresses = network_manager_get_addresses(ip4config_path);
-            g_free(ip4config_path);
             break;
         }
     }
@@ -142,30 +155,40 @@ void test_device_addresses ()
     g_assert_cmpuint(address_count, >, 0);
 }
 
-void test_all_addresses ()
+void test_device_configurations ()
 {
-    network_manager_ip4config ** addresses, ** address_pointer;
-    network_manager_ip4config * address;
-    guint address_count;
+    network_manager_device_config ** configurations;
+    guint configuration_count;
 
-    addresses = network_manager_all_addresses();
-    g_assert(addresses);
-    g_assert(*addresses);
+    configurations = network_manager_device_configurations();
+    g_assert(configurations);
 
     for (
-            address_pointer = addresses, address_count = 0;
-            *address_pointer != NULL;
-            address_pointer++, address_count++
+            configuration_count = 0;
+            configurations[configuration_count] != NULL;
+            configuration_count++
         )
     {
-        address = *address_pointer;
-        g_assert_cmpuint(address->ip_address, >, 0);
-        g_assert_cmphex(address->ip_address, <, 0xFFFFFFFF);
-        g_assert_cmpuint(address->prefix, >, 0);
-        g_assert_cmpuint(address->prefix, <, 32);
-        g_assert_cmpuint(address->gateway_address, >, 0);
-        g_assert_cmphex(address->gateway_address, <, 0xFFFFFFFF);
+        g_assert(configurations[configuration_count]->device_name);
+        g_assert_cmpuint(
+                strlen(configurations[configuration_count]->device_name),
+                >,
+                0
+            );
+
+        g_assert(configurations[configuration_count]->ip_config);
+        g_assert(configurations[configuration_count]->ip_config[0]);
+        g_assert_cmpuint(
+                configurations[configuration_count]->ip_config[0]->prefix,
+                >,
+                0
+            );
+        g_assert_cmpuint(
+                configurations[configuration_count]->ip_config[0]->prefix,
+                <,
+                32
+            );
     }
-    g_assert_cmpuint(address_count, >, 0);
-    network_manager_free_addresses(addresses);
+    g_assert_cmpuint(configuration_count, >, 0);
+    network_manager_free_device_configurations(configurations);
 }

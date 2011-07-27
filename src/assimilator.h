@@ -6,13 +6,13 @@
 
 typedef struct {
     gchar * server;
-    network_manager_ip4config * network_config;
+    network_manager_device_config * device_configuration;
 } server_configuration;
 
 
 const server_configuration * assimilator_match_network (
         server_configuration ** stored_configurations,
-        network_manager_ip4config ** ip_configurations
+        network_manager_device_config ** device_configurations
     );
 
 gboolean assimilator_connect (gchar * configuration_file);
