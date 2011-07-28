@@ -3,8 +3,10 @@
 
 #include <glib.h>
 
+#include "types.h"
 
-gboolean synergy_connect (gchar * server);
+
+gboolean synergy_connect (const server_configuration * configuration);
 
 gboolean synergy_disconnect ();
 

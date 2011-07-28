@@ -2,12 +2,8 @@
 #define ASSIMILATOR_H
 
 #include "network-manager.h"
-
-
-typedef struct {
-    gchar * server;
-    network_manager_device_config * device_configuration;
-} server_configuration;
+#include "pulseaudio.h"
+#include "types.h"
 
 
 const server_configuration * assimilator_match_network (

@@ -4,12 +4,17 @@
 #include "synergy.h"
 
 
-gboolean synergy_connect (gchar * server)
+gboolean synergy_connect (const server_configuration * configuration)
 {
     gchar * connect_command;
     guint exit_code;
 
-    connect_command = g_strconcat("synergyc ", server, NULL);
+    if (! configuration)
+    {
+        g_error("Configuration pointer must not be NULL.");
+    }
+
+    connect_command = g_strconcat("synergyc ", configuration->server, NULL);
     exit_code = system(connect_command);
     g_free(connect_command);
 

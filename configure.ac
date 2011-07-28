@@ -28,6 +28,7 @@ AC_CHECK_LIB([ltdl], [lt_dlinit])
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h stdlib.h string.h sys/socket.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_UINT32_T
 
 # Checks for library functions.
 AC_FUNC_FORK

@@ -38,11 +38,11 @@ int main (int argc, char ** argv)
     }
     g_free(new_path);
     current_directory = g_get_current_dir();
-    if (lt_dlsetsearchpath(current_directory))
+    if (setenv("LD_LIBRARY_PATH", current_directory, TRUE))
     {
-        g_error("Failed to update LTDL search path: %s.", lt_dlerror());
+        g_error("Failed to update library search path.");
     }
-    g_debug("LTDL search path is: %s.", lt_dlgetsearchpath());
+    g_debug("Library search path is: %s", getenv("LD_LIBRARY_PATH"));
 
     g_debug("Searching for test modules...");
     error = NULL;

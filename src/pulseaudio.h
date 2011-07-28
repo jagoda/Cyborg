@@ -3,13 +3,18 @@
 
 #include <glib.h>
 
+#include "types.h"
+
 
 gboolean pulseaudio_connect (
-        gchar * server,
-        guint source_index,
-        guint sink_index
+        server_configuration * configuration,
+        gint * tunnel_module_index,
+        gint * loopback_module_index
     );
 
-gboolean pulseaudio_disconnect ();
+gboolean pulseaudio_disconnect (
+        gint tunnel_module_index,
+        gint loopback_module_index
+    );
 
 #endif      /* PULSEAUDIO_H */

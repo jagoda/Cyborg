@@ -1,8 +1,7 @@
 #ifndef CONFIGURATION_PARSER_H
 #define CONFIGURATION_PARSER_H
 
-#include "assimilator.h"
-#include "network-manager.h"
+#include "types.h"
 
 
 server_configuration ** configuration_parser_load (

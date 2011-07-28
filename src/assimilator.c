@@ -226,7 +226,7 @@ gboolean connect_synergy (
             )
         ))
     {
-        connected = synergy_connect(matched_configuration->server);
+        connected = synergy_connect(matched_configuration);
     }
 
     return connected;
