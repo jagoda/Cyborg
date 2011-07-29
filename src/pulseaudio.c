@@ -35,6 +35,13 @@ static void success_callback (
         void * userdata
     );
 
+static void lookup_source_callback (
+        pa_context * context,
+        const pa_source_info * sources,
+        int list_length,
+        void * userdata
+    );
+
 static gint create_source_tunnel (
         pa_context * context,
         pa_mainloop * mainloop,
@@ -55,6 +62,12 @@ static gboolean unload_module (
         guint module_index
     );
 
+static guint lookup_loaded_source (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        guint module_index
+    );
+
 
 gboolean pulseaudio_connect (
         server_configuration * configuration,
@@ -64,6 +77,7 @@ gboolean pulseaudio_connect (
 {
     pa_mainloop * mainloop = NULL;
     pa_context * context = NULL;
+    guint tunnel_source = 0;
 
     if (! configuration)
     {
@@ -85,13 +99,24 @@ gboolean pulseaudio_connect (
     {
         g_error("Failed to connect to server.");
     }
-    /* FIXME: need to get source from server. */
+    if (
+            (tunnel_source = lookup_loaded_source(
+                context,
+                mainloop,
+                *tunnel_module_index)
+            )
+            ==
+            PA_INVALID_INDEX
+        )
+    {
+        g_error("Failed to get index for new source.");
+    }
     if (
             (*loopback_module_index =
                  create_loopback(
                      context,
                      mainloop,
-                     configuration->audio_configuration->source,
+                     tunnel_source,
                      configuration->audio_configuration->sink
                 )
             )
@@ -193,6 +218,30 @@ void success_callback (
     }
 }
 
+void lookup_source_callback (
+        pa_context * context,
+        const pa_source_info * sources,
+        int end_of_list,
+        void * userdata
+    )
+{
+    gint index = 0;
+    guint * module_index = userdata;
+
+    /* FIXME: need to be able to set to invalid if not found. */
+    if (end_of_list == 0)
+    {
+        if (sources[index].owner_module == *module_index)
+        {
+            *module_index = sources[index].index;
+        }
+    }
+    else if (end_of_list < 0)
+    {
+        *module_index = PA_INVALID_INDEX;
+    }
+}
+
 gint create_source_tunnel (
         pa_context * context,
         pa_mainloop * mainloop,
@@ -239,7 +288,7 @@ gint create_loopback (
 
     module_arguments = g_strdup_printf(
             "source=%u sink=%u",
-            0,
+            source_index,
             sink_index
         );
     operation = pa_context_load_module(
@@ -279,4 +328,30 @@ gboolean unload_module (
         );
 
     return success != 0;
+}
+
+guint lookup_loaded_source (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        guint module_index
+    )
+{
+    pa_operation * operation = NULL;
+
+    /*
+        NOTE: the callback function uses a single pointer as input and output.
+        The starting value should be the owning module index. The final
+        value will be the source index owned by that module.
+    */
+    operation = pa_context_get_source_info_list(
+            context,
+            lookup_source_callback,
+            &module_index
+        );
+    WAIT_FOR_COMPLETION(
+            pa_operation_get_state(operation) != PA_OPERATION_DONE,
+            mainloop
+        );
+
+    return module_index;
 }
