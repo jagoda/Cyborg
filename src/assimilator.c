@@ -1,4 +1,5 @@
 #include <glib.h>
+#include <pulse/pulseaudio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -6,6 +7,10 @@
 #include "configuration_parser.h"
 #include "network-manager.h"
 #include "synergy.h"
+
+
+static gint tunnel_module_index = PA_INVALID_INDEX;
+static gint loopback_module_index = PA_INVALID_INDEX;
 
 
 static server_configuration * match_network(
@@ -24,11 +29,6 @@ static gboolean network_is_match (
     );
 
 static guint32 network_address (guint32 address, guint32 prefix);
-
-static gboolean connect_synergy (
-        server_configuration ** stored_configurations,
-        network_manager_device_config ** device_configurations
-    );
 
 
 const server_configuration * assimilator_match_network (
@@ -72,8 +72,9 @@ const server_configuration * assimilator_match_network (
 gboolean assimilator_connect (gchar * configuration_file)
 {
     server_configuration ** stored_configurations;
+    server_configuration * matched_configuration;
     network_manager_device_config ** device_configurations;
-    gboolean success;
+    gboolean success = FALSE;
 
     if (! configuration_file)
     {
@@ -94,17 +95,73 @@ gboolean assimilator_connect (gchar * configuration_file)
         g_error("Failed to get current device configurations.");
     }
 
-    success = TRUE;
-    if (! connect_synergy(stored_configurations, device_configurations)) {
-        success = FALSE;
+    if ((
+            matched_configuration =
+                (server_configuration *) assimilator_match_network(
+                    stored_configurations,
+                    device_configurations
+                )
+        ))
+    {
+        success = TRUE;
+        if (! synergy_connect(matched_configuration))
+        {
+            success = FALSE;
+            g_warning("Failed to connect to Synergy.");
+        }
+        if (
+                tunnel_module_index == PA_INVALID_INDEX
+                &&
+                loopback_module_index == PA_INVALID_INDEX
+           )
+        {
+            if (!
+                    pulseaudio_connect(
+                        matched_configuration,
+                        &tunnel_module_index,
+                        &loopback_module_index
+                    )
+                )
+            {
+                success = FALSE;
+                g_warning("Failed to connect to PulseAudio.");
+            }
+        }
+        else
+        {
+            g_error("PulseAudio already connected.");
+        }
     }
+
+    configuration_parser_free_configurations(stored_configurations);
+    network_manager_free_device_configurations(device_configurations);
 
     return success;
 }
 
 gboolean assimilator_disconnect ()
 {
-    return synergy_disconnect();
+    gboolean success = FALSE;
+
+    if (
+            tunnel_module_index != PA_INVALID_INDEX
+            &&
+            loopback_module_index != PA_INVALID_INDEX
+        )
+    {
+        success = 
+            synergy_disconnect()
+            &&
+            pulseaudio_disconnect(
+                    tunnel_module_index,
+                    loopback_module_index
+                );
+
+        tunnel_module_index = PA_INVALID_INDEX;
+        loopback_module_index = PA_INVALID_INDEX;
+    }
+
+    return success;
 }
 
 
@@ -209,25 +266,4 @@ guint32 network_address (guint32 address, guint32 prefix)
 {
     guint32 network_mask = 0xFFFFFFFF << (32 - prefix);
     return address & network_mask;
-}
-
-gboolean connect_synergy (
-        server_configuration ** stored_configurations,
-        network_manager_device_config ** device_configurations
-    )
-{
-    const server_configuration * matched_configuration;
-    gboolean connected = FALSE;
-
-    if ((
-            matched_configuration = assimilator_match_network(
-                stored_configurations,
-                device_configurations
-            )
-        ))
-    {
-        connected = synergy_connect(matched_configuration);
-    }
-
-    return connected;
 }

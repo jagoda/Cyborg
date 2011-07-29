@@ -20,6 +20,8 @@ static gboolean write_pid_file (gchar * pid_file, guint pid);
 
 static void connect_handler (guint state);
 
+static void exit_handler (int signum);
+
 
 int main (int argc, char ** argv)
 {
@@ -34,11 +36,7 @@ int main (int argc, char ** argv)
     {
         if (( child_pid = fork() ))
         {
-            if (write_pid_file(pid_file, child_pid))
-            {
-                connect_handler(NM_DEVICE_STATE_ACTIVATED);
-            }
-            else
+            if (! write_pid_file(pid_file, child_pid))
             {
                 g_warning("Killing child process since PID file creation failed.");
                 kill(child_pid, SIGTERM);
@@ -46,6 +44,8 @@ int main (int argc, char ** argv)
         }
         else
         {
+            signal(SIGTERM, exit_handler);
+            connect_handler(NM_DEVICE_STATE_ACTIVATED);
             event_loop = g_main_loop_new(NULL, FALSE);
             network_manager_register_connect_handler(connect_handler);
             g_main_loop_run(event_loop);
@@ -123,4 +123,16 @@ void connect_handler (guint state)
         default:
             break;
     }
+}
+
+void exit_handler (int signum)
+{
+    gchar * pid_file = NULL;
+
+    assimilator_disconnect();
+    pid_file = g_strconcat(getenv("HOME"), "/", PID_FILE, NULL);
+    unlink(pid_file);
+    g_free(pid_file);
+
+    exit(EXIT_SUCCESS);
 }
