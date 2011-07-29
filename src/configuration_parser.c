@@ -3,10 +3,12 @@
 #include <json-glib/json-glib.h>
 #include <netinet/in.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 
 #include "configuration_parser.h"
 #include "network-manager.h"
+#include "types.h"
 
 
 #define SERVER_KEY      "server"
@@ -14,9 +16,20 @@
 #define ADDRESS_KEY     "address"
 #define PREFIX_KEY      "prefix"
 #define GATEWAY_KEY     "gateway"
+#define AUDIO_MODE_KEY  "audio_mode"
+#define SOURCE_KEY      "audio_source"
+#define SINK_KEY        "audio_sink"
 
+
+static server_configuration * parse_server_configuration (
+        JsonObject * json_object
+    );
 
 static network_manager_device_config * parse_device_configuration (
+        JsonObject * json_object
+    );
+
+static pulseaudio_config * parse_audio_configuration (
         JsonObject * json_object
     );
 
@@ -69,17 +82,9 @@ server_configuration ** configuration_parser_load (
                 g_error("Expected configuration to be a JSON object.");
             }
             object_pointer = json_node_get_object(node_pointer);
-            configurations[index] = (server_configuration *) g_malloc(
-                    sizeof(server_configuration)
+            configurations[index] = parse_server_configuration(
+                    object_pointer
                 );
-            configurations[index]->server = g_strdup(
-                    json_object_get_string_member(
-                        object_pointer,
-                        SERVER_KEY
-                    )
-                );
-            configurations[index]->device_configuration =
-                parse_device_configuration(object_pointer);
         }
         configurations[index] = NULL;
     }
@@ -109,6 +114,7 @@ void configuration_parser_free_configuration (
         network_manager_free_device_configuration(
                 configuration->device_configuration
             );
+        g_free(configuration->audio_configuration);
     }
     g_free(configuration);
 }
@@ -133,6 +139,38 @@ void configuration_parser_free_configurations (
     }
 }
 
+
+server_configuration * parse_server_configuration (
+        JsonObject * json_object
+    )
+{
+    server_configuration * configuration = NULL;
+
+    if (json_object == NULL)
+    {
+        g_error("JSON object must not be NULL.");
+    }
+
+    configuration = (server_configuration *) g_malloc(
+            sizeof(server_configuration)
+        );
+    if (! (
+            configuration->server = g_strdup(
+                json_object_get_string_member(json_object, SERVER_KEY)
+            )
+        ))
+    {
+        g_error("Missing server name in configuraiton.");
+    }
+    configuration->device_configuration = parse_device_configuration(
+            json_object
+        );
+    configuration->audio_configuration = parse_audio_configuration(
+            json_object
+        );
+
+    return configuration;
+}
 
 network_manager_device_config * parse_device_configuration (
         JsonObject * json_object
@@ -218,4 +256,63 @@ network_manager_device_config * parse_device_configuration (
         json_object_get_int_member(json_object, PREFIX_KEY);
 
     return device_configuration;
+}
+
+pulseaudio_config * parse_audio_configuration (JsonObject * json_object)
+{
+    pulseaudio_config * configuration = NULL;
+    gchar * server_name = NULL, * mode = NULL;
+
+    if (! json_object)
+    {
+        g_error("JSON object must not be NULL.");
+    }
+
+    if (! (
+            server_name
+            =
+            (gchar *) json_object_get_string_member(json_object, SERVER_KEY)
+        ))
+    {
+        g_error("Missing server name in configuration.");
+    }
+    configuration = (pulseaudio_config *) g_malloc(
+            sizeof(pulseaudio_config)
+        );
+    if ((
+            mode
+            =
+            (gchar *) json_object_get_string_member(
+                json_object,
+                AUDIO_MODE_KEY
+            )
+        ))
+    {
+        if (strcmp("push", mode) == 0)
+        {
+            configuration->mode = PULSEAUDIO_MODE_PUSH;
+        }
+        else if (strcmp("pull", mode) == 0)
+        {
+            configuration->mode = PULSEAUDIO_MODE_PULL;
+        }
+        else
+        {
+            g_error("Invalid audio mode for server '%s'", server_name);
+        }
+    }
+    else
+    {
+        g_error("Missing audio mode for server '%s'", server_name);
+    }
+    configuration->source = json_object_get_int_member(
+            json_object,
+            SOURCE_KEY
+        );
+    configuration->sink = json_object_get_int_member(
+            json_object,
+            SINK_KEY
+        );
+
+    return configuration;
 }

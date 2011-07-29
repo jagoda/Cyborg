@@ -46,7 +46,7 @@ void test_match_network ()
     g_assert(matched_configuration);
     g_assert(matched_configuration->server);
     g_assert_cmpstr(
-            "fake.synergy.server.com",
+            "bump.dyn.webahead.ibm.com",
             ==,
             matched_configuration->server
         );

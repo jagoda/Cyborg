@@ -43,7 +43,7 @@ server_configuration * synthesize_configuration ()
     configuration = (server_configuration *) g_malloc(
             sizeof(server_configuration)
         );
-    configuration->server = g_strdup("fake.synergy.server.com");
+    configuration->server = g_strdup("bump.dyn.webahead.ibm.com");
     configuration->device_configuration = NULL;
 
     return configuration;

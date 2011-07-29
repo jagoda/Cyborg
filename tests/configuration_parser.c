@@ -43,6 +43,13 @@ void test_load ()
                 >,
                 0
             );
+        g_assert_cmpuint(
+                PULSEAUDIO_MODE_PULL,
+                ==,
+                configuration->audio_configuration->mode
+            );
     }
     g_assert_cmpuint(configuration_count, >, 0);
+
+    configuration_parser_free_configuration(configuration);
 }

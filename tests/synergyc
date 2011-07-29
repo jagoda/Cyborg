@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 EXIT_STATUS=1
-if [ "${1}" == "fake.synergy.server.com" ]; then
+if [ "${1}" == "bump.dyn.webahead.ibm.com" ]; then
     EXIT_STATUS=0
 fi
 
