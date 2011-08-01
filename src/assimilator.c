@@ -9,8 +9,7 @@
 #include "synergy.h"
 
 
-static gint tunnel_module_index = PA_INVALID_INDEX;
-static gint loopback_module_index = PA_INVALID_INDEX;
+static GQueue * pulseaudio_modules = NULL;
 
 
 static server_configuration * match_network(
@@ -109,17 +108,13 @@ gboolean assimilator_connect (gchar * configuration_file)
             success = FALSE;
             g_warning("Failed to connect to Synergy.");
         }
-        if (
-                tunnel_module_index == PA_INVALID_INDEX
-                &&
-                loopback_module_index == PA_INVALID_INDEX
-           )
+        if (pulseaudio_modules == NULL)
         {
+            pulseaudio_modules = g_queue_new();
             if (!
                     pulseaudio_connect(
                         matched_configuration,
-                        &tunnel_module_index,
-                        &loopback_module_index
+                        pulseaudio_modules
                     )
                 )
             {
@@ -143,22 +138,15 @@ gboolean assimilator_disconnect ()
 {
     gboolean success = FALSE;
 
-    if (
-            tunnel_module_index != PA_INVALID_INDEX
-            &&
-            loopback_module_index != PA_INVALID_INDEX
-        )
+    if (pulseaudio_modules != NULL)
     {
         success = 
             synergy_disconnect()
             &&
-            pulseaudio_disconnect(
-                    tunnel_module_index,
-                    loopback_module_index
-                );
+            pulseaudio_disconnect(pulseaudio_modules);
 
-        tunnel_module_index = PA_INVALID_INDEX;
-        loopback_module_index = PA_INVALID_INDEX;
+        g_queue_free(pulseaudio_modules);
+        pulseaudio_modules = NULL;
     }
 
     return success;

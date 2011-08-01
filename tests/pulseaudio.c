@@ -31,21 +31,16 @@ void register_tests ()
 void test_connect_disconnect ()
 {
     server_configuration ** configurations = NULL;
-    gint tunnel_module_index = -1, loopback_module_index = -1;
+    GQueue * loaded_modules = NULL;
 
     if (! (configurations = configuration_parser_load(TEST_CONFIGURATION)))
     {
         g_error("Failed to load configuration file.");
     }
-    g_assert(pulseaudio_connect(
-                configurations[1],
-                &tunnel_module_index,
-                &loopback_module_index
-            ));
-    g_assert(pulseaudio_disconnect(
-                tunnel_module_index,
-                loopback_module_index
-            ));
+    loaded_modules = g_queue_new();
+    g_assert(pulseaudio_connect( configurations[1], loaded_modules));
+    g_assert(pulseaudio_disconnect(loaded_modules));
 
+    g_queue_free(loaded_modules);
     configuration_parser_free_configurations(configurations);
 }

@@ -23,6 +23,13 @@ static void pulseaudio_init (pa_mainloop ** mainloop, pa_context ** context);
 
 static void pulseaudio_destroy (pa_mainloop * mainloop, pa_context * context);
 
+gboolean connect_pull (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        server_configuration * configuration,
+        GQueue * loaded_modules
+    );
+
 static void load_module_callback (
         pa_context * context,
         uint32_t index,
@@ -71,13 +78,12 @@ static guint lookup_loaded_source (
 
 gboolean pulseaudio_connect (
         server_configuration * configuration,
-        gint * tunnel_module_index,
-        gint * loopback_module_index
+        GQueue * loaded_modules
     )
 {
     pa_mainloop * mainloop = NULL;
     pa_context * context = NULL;
-    guint tunnel_source = 0;
+    gboolean success = FALSE;
 
     if (! configuration)
     {
@@ -85,70 +91,35 @@ gboolean pulseaudio_connect (
     }
 
     pulseaudio_init(&mainloop, &context);
-    if (
-            (*tunnel_module_index =
-                create_source_tunnel(
-                    context,
-                    mainloop,
-                    configuration->server,
-                    configuration->audio_configuration->source
-                )
-            )
-            < 0
-        )
-    {
-        g_error("Failed to connect to server.");
-    }
-    if (
-            (tunnel_source = lookup_loaded_source(
-                context,
-                mainloop,
-                *tunnel_module_index)
-            )
-            ==
-            PA_INVALID_INDEX
-        )
-    {
-        g_error("Failed to get index for new source.");
-    }
-    if (
-            (*loopback_module_index =
-                 create_loopback(
-                     context,
-                     mainloop,
-                     tunnel_source,
-                     configuration->audio_configuration->sink
-                )
-            )
-            < 0
-        )
-    {
-        g_error("Failed to link local and remote sources.");
-    }
+    success = connect_pull (
+        context,
+        mainloop,
+        configuration,
+        loaded_modules
+    );
     pulseaudio_destroy(mainloop, context);
 
-    return *tunnel_module_index > 0 && *loopback_module_index > 0;
+    return success;
 }
 
-gboolean pulseaudio_disconnect (
-        gint tunnel_module_index,
-        gint loopback_module_index
-    )
+gboolean pulseaudio_disconnect (GQueue * loaded_modules)
 {
     pa_mainloop * mainloop = NULL;
     pa_context * context = NULL;
-    gboolean tunnel_unloaded = FALSE, loopback_unloaded = FALSE;
+    gboolean success = TRUE;
 
     pulseaudio_init(&mainloop, &context);
-    tunnel_unloaded = unload_module(context, mainloop, tunnel_module_index);
-    loopback_unloaded = unload_module(
-            context,
-            mainloop,
-            loopback_module_index
-        );
+    while(! g_queue_is_empty(loaded_modules))
+    {
+        success &= unload_module(
+                context,
+                mainloop,
+                GPOINTER_TO_UINT(g_queue_pop_head(loaded_modules))
+            );
+    }
     pulseaudio_destroy(mainloop, context);
 
-    return tunnel_unloaded && loopback_unloaded;
+    return success;
 }
 
 
@@ -188,6 +159,79 @@ void pulseaudio_destroy (pa_mainloop * mainloop, pa_context * context)
         pa_context_unref(context);
         pa_mainloop_free(mainloop);
     }
+}
+
+gboolean connect_pull (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        server_configuration * configuration,
+        GQueue * loaded_modules
+    )
+{
+    guint tunnel_source_index = PA_INVALID_INDEX;
+    guint tunnel_module_index = PA_INVALID_INDEX;
+    guint loopback_module_index = PA_INVALID_INDEX;
+    gboolean success = TRUE;
+
+    if (
+            (tunnel_module_index =
+                create_source_tunnel(
+                    context,
+                    mainloop,
+                    configuration->server,
+                    configuration->audio_configuration->source
+                )
+            )
+            < 0
+        )
+    {
+        g_error("Failed to connect to server.");
+        success = FALSE;
+    }
+    else
+    {
+        g_queue_push_head(
+                loaded_modules,
+                GUINT_TO_POINTER(tunnel_module_index)
+            );
+    }
+    if (
+            (tunnel_source_index = lookup_loaded_source(
+                context,
+                mainloop,
+                tunnel_module_index)
+            )
+            ==
+            PA_INVALID_INDEX
+        )
+    {
+        g_error("Failed to get index for new source.");
+        success = FALSE;
+    }
+    if (
+            (loopback_module_index =
+                 create_loopback(
+                     context,
+                     mainloop,
+                     tunnel_source_index,
+                     configuration->audio_configuration->sink
+                )
+            )
+            < 0
+        )
+    {
+        g_error("Failed to link local and remote sources.");
+        success = FALSE;
+    }
+    else
+    {
+        g_queue_push_head(
+                loaded_modules,
+                GUINT_TO_POINTER(loopback_module_index)
+            );
+    }
+
+    return success;
 }
 
 void load_module_callback (

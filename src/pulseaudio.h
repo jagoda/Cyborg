@@ -8,13 +8,9 @@
 
 gboolean pulseaudio_connect (
         server_configuration * configuration,
-        gint * tunnel_module_index,
-        gint * loopback_module_index
+        GQueue * loaded_modules
     );
 
-gboolean pulseaudio_disconnect (
-        gint tunnel_module_index,
-        gint loopback_module_index
-    );
+gboolean pulseaudio_disconnect (GQueue * loaded_modules);
 
 #endif      /* PULSEAUDIO_H */
