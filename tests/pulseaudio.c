@@ -19,16 +19,32 @@
 
 
 /* Test cases. */
-static void test_connect_disconnect ();
+static void test_pull ();
+static void test_push ();
+
+
+static void test_configuration (guint index);
 
 
 void register_tests ()
 {
-    register_test(test_connect_disconnect);
+    register_test(test_pull);
+    register_test(test_push);
 }
 
 
-void test_connect_disconnect ()
+void test_pull ()
+{
+    test_configuration(1);
+}
+
+void test_push ()
+{
+    test_configuration(2);
+}
+
+
+void test_configuration (guint index)
 {
     server_configuration ** configurations = NULL;
     GQueue * loaded_modules = NULL;
@@ -38,7 +54,7 @@ void test_connect_disconnect ()
         g_error("Failed to load configuration file.");
     }
     loaded_modules = g_queue_new();
-    g_assert(pulseaudio_connect( configurations[1], loaded_modules));
+    g_assert(pulseaudio_connect(configurations[index], loaded_modules));
     g_assert(pulseaudio_disconnect(loaded_modules));
 
     g_queue_free(loaded_modules);

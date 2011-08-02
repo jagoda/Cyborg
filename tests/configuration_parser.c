@@ -1,4 +1,5 @@
 #include <glib.h>
+#include <pulse/pulseaudio.h>
 #include <string.h>
 
 #include "test_module.h"
@@ -43,10 +44,34 @@ void test_load ()
                 >,
                 0
             );
-        g_assert_cmpuint(
-                PULSEAUDIO_MODE_PULL,
-                ==,
+        if (configuration->audio_configuration->mode == PULSEAUDIO_MODE_PULL)
+        {
+            g_assert_cmpuint(
+                    configuration->audio_configuration->source,
+                    !=,
+                    PA_INVALID_INDEX
+                );
+        }
+        else if (
                 configuration->audio_configuration->mode
+                ==
+                PULSEAUDIO_MODE_PUSH
+            )
+        {
+            g_assert_cmpuint(
+                    configuration->audio_configuration->source,
+                    ==,
+                    PA_INVALID_INDEX
+                );
+        }
+        else
+        {
+            g_assert_not_reached();
+        }
+        g_assert_cmpuint(
+                configuration->audio_configuration->sink,
+                !=,
+                PA_INVALID_INDEX
             );
     }
     g_assert_cmpuint(configuration_count, >, 0);

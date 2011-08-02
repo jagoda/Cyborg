@@ -2,6 +2,7 @@
 #include <glib.h>
 #include <json-glib/json-glib.h>
 #include <netinet/in.h>
+#include <pulse/pulseaudio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -291,10 +292,15 @@ pulseaudio_config * parse_audio_configuration (JsonObject * json_object)
         if (strcmp("push", mode) == 0)
         {
             configuration->mode = PULSEAUDIO_MODE_PUSH;
+            configuration->source = PA_INVALID_INDEX;
         }
         else if (strcmp("pull", mode) == 0)
         {
             configuration->mode = PULSEAUDIO_MODE_PULL;
+            configuration->source = json_object_get_int_member(
+                    json_object,
+                    SOURCE_KEY
+                );
         }
         else
         {
@@ -305,10 +311,6 @@ pulseaudio_config * parse_audio_configuration (JsonObject * json_object)
     {
         g_error("Missing audio mode for server '%s'", server_name);
     }
-    configuration->source = json_object_get_int_member(
-            json_object,
-            SOURCE_KEY
-        );
     configuration->sink = json_object_get_int_member(
             json_object,
             SINK_KEY

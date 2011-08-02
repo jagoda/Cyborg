@@ -17,6 +17,7 @@
 
 #define MODULE_LOOPBACK             "module-loopback"
 #define MODULE_TUNNEL_SOURCE        "module-tunnel-source"
+#define MODULE_TUNNEL_SINK          "module-tunnel-sink"
 
 
 static void pulseaudio_init (pa_mainloop ** mainloop, pa_context ** context);
@@ -27,6 +28,13 @@ gboolean connect_pull (
         pa_context * context,
         pa_mainloop * mainloop,
         server_configuration * configuration,
+        GQueue * loaded_modules
+    );
+
+gboolean connect_push (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        server_configuration * configuraiton,
         GQueue * loaded_modules
     );
 
@@ -45,7 +53,14 @@ static void success_callback (
 static void lookup_source_callback (
         pa_context * context,
         const pa_source_info * sources,
-        int list_length,
+        int end_of_list,
+        void * userdata
+    );
+
+static void lookup_sink_callback (
+        pa_context * context,
+        const pa_sink_info * sinks,
+        int end_of_list,
         void * userdata
     );
 
@@ -54,6 +69,13 @@ static gint create_source_tunnel (
         pa_mainloop * mainloop,
         gchar * server,
         guint source_index
+    );
+
+static gint create_sink_tunnel (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        gchar * server,
+        guint sink_index
     );
 
 static gint create_loopback (
@@ -75,6 +97,18 @@ static guint lookup_loaded_source (
         guint module_index
     );
 
+static gchar * lookup_loaded_sink (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        guint module_index
+    );
+
+static gboolean set_default_sink (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        gchar * sink_name
+    );
+
 
 gboolean pulseaudio_connect (
         server_configuration * configuration,
@@ -91,12 +125,28 @@ gboolean pulseaudio_connect (
     }
 
     pulseaudio_init(&mainloop, &context);
-    success = connect_pull (
-        context,
-        mainloop,
-        configuration,
-        loaded_modules
-    );
+    switch(configuration->audio_configuration->mode)
+    {
+        case PULSEAUDIO_MODE_PULL:
+            success = connect_pull(
+                    context,
+                    mainloop,
+                    configuration,
+                    loaded_modules
+                );
+            break;
+        case PULSEAUDIO_MODE_PUSH:
+            success = connect_push(
+                    context,
+                    mainloop,
+                    configuration,
+                    loaded_modules
+                );
+            break;
+        default:
+            g_error("Invalid audio mode.");
+            break;
+    }
     pulseaudio_destroy(mainloop, context);
 
     return success;
@@ -182,7 +232,8 @@ gboolean connect_pull (
                     configuration->audio_configuration->source
                 )
             )
-            < 0
+            ==
+            PA_INVALID_INDEX
         )
     {
         g_error("Failed to connect to server.");
@@ -217,7 +268,8 @@ gboolean connect_pull (
                      configuration->audio_configuration->sink
                 )
             )
-            < 0
+            ==
+            PA_INVALID_INDEX
         )
     {
         g_error("Failed to link local and remote sources.");
@@ -230,6 +282,61 @@ gboolean connect_pull (
                 GUINT_TO_POINTER(loopback_module_index)
             );
     }
+
+    return success;
+}
+
+gboolean connect_push (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        server_configuration * configuration,
+        GQueue * loaded_modules
+    )
+{
+    guint tunnel_module_index = PA_INVALID_INDEX;
+    gchar * loaded_sink_name = NULL;
+    gboolean success = TRUE;
+
+    if (
+            (tunnel_module_index = create_sink_tunnel(
+                context,
+                mainloop,
+                configuration->server,
+                configuration->audio_configuration->sink
+            ))
+            ==
+            PA_INVALID_INDEX
+        )
+    {
+        g_error("Failed to create tunnel for sink.");
+        success = FALSE;
+    }
+    else
+    {
+        g_queue_push_head(
+                loaded_modules,
+                GUINT_TO_POINTER(tunnel_module_index)
+            );
+    }
+    if (
+            (loaded_sink_name = lookup_loaded_sink(
+                context,
+                mainloop,
+                tunnel_module_index
+            ))
+            ==
+            NULL
+       )
+    {
+        g_error("Failed to index for new sink.");
+        success = FALSE;
+    }
+    if (!  set_default_sink(context, mainloop, loaded_sink_name))
+    {
+        g_error("Failed to update default sink.");
+        success = FALSE;
+    }
+    g_free(loaded_sink_name);
 
     return success;
 }
@@ -264,25 +371,47 @@ void success_callback (
 
 void lookup_source_callback (
         pa_context * context,
-        const pa_source_info * sources,
+        const pa_source_info * source,
         int end_of_list,
         void * userdata
     )
 {
-    gint index = 0;
     guint * module_index = userdata;
 
     /* FIXME: need to be able to set to invalid if not found. */
     if (end_of_list == 0)
     {
-        if (sources[index].owner_module == *module_index)
+        if (source->owner_module == *module_index)
         {
-            *module_index = sources[index].index;
+            *module_index = source->index;
         }
     }
     else if (end_of_list < 0)
     {
         *module_index = PA_INVALID_INDEX;
+    }
+}
+
+void lookup_sink_callback (
+        pa_context * context,
+        const pa_sink_info * sink,
+        int end_of_list,
+        void * userdata
+    )
+{
+    guint module_index = *((guint *) userdata);
+
+    /* FIXME: need to be able to set to NULL if not found. */
+    if (end_of_list == 0)
+    {
+        if (sink->owner_module == module_index)
+        {
+            *((gchar **) userdata) = g_strdup(sink->name);
+        }
+    }
+    else if (end_of_list < 0)
+    {
+        *((gchar **) userdata) = NULL;
     }
 }
 
@@ -305,6 +434,39 @@ gint create_source_tunnel (
     operation = pa_context_load_module(
             context,
             MODULE_TUNNEL_SOURCE,
+            module_arguments,
+            load_module_callback,
+            &module_index
+        );
+    g_free(module_arguments);
+    WAIT_FOR_COMPLETION(
+            pa_operation_get_state(operation) != PA_OPERATION_DONE,
+            mainloop
+        );
+    pa_operation_unref(operation);
+
+    return module_index;
+}
+
+gint create_sink_tunnel (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        gchar * server,
+        guint sink_index
+    )
+{
+    gchar * module_arguments = NULL;
+    pa_operation * operation = NULL;
+    gint32 module_index = -1;
+
+    module_arguments = g_strdup_printf(
+            "server=%s sink=%u",
+            server,
+            sink_index
+        );
+    operation = pa_context_load_module(
+            context,
+            MODULE_TUNNEL_SINK,
             module_arguments,
             load_module_callback,
             &module_index
@@ -398,4 +560,54 @@ guint lookup_loaded_source (
         );
 
     return module_index;
+}
+
+gchar * lookup_loaded_sink (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        guint module_index
+    )
+{
+    pa_operation * operation = NULL;
+    gpointer callback_data = GUINT_TO_POINTER(module_index);
+
+    /*
+        NOTE: the callback function uses a single pointer as input and output.
+        The starting value should be the owning module index. The final
+        value will be the source index owned by that module.
+    */
+    operation = pa_context_get_sink_info_list(
+            context,
+            lookup_sink_callback,
+            &callback_data
+        );
+    WAIT_FOR_COMPLETION(
+            pa_operation_get_state(operation) != PA_OPERATION_DONE,
+            mainloop
+        );
+
+    return (gchar *) callback_data;
+}
+
+gboolean set_default_sink (
+        pa_context * context,
+        pa_mainloop * mainloop,
+        gchar * sink_name
+    )
+{
+    pa_operation * operation = NULL;
+    gint success = 0;
+
+    operation = pa_context_set_default_sink(
+            context,
+            sink_name,
+            success_callback,
+            &success
+        );
+    WAIT_FOR_COMPLETION(
+            pa_operation_get_state(operation) != PA_OPERATION_DONE,
+            mainloop
+        );
+
+    return success != 0;
 }
